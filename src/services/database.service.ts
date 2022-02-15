@@ -2,23 +2,21 @@ import { singleton } from "tsyringe";
 import { ReturnModelType, DocumentType } from "@typegoose/typegoose";
 import Template, { TemplateModel } from "../entity/template.entity";
 import mongoose, { ObjectId } from "mongoose";
-import KattisCookie, {
-  KattisCookieModel,
-} from "../entity/cookies.kattis.entity";
 import KattisProblem, {
   KattisProblemModel,
 } from "../entity/problem.kattis.entity";
+import KattisUser, { KattisUserModel } from "../entity/user.kattis.entity";
 
 @singleton()
 export default class DatabaseService {
   private templateModel: ReturnModelType<typeof Template>;
-  private kattisCookiesModel: ReturnModelType<typeof KattisCookie>;
   private kattisProblemModel: ReturnModelType<typeof KattisProblem>;
+  private kattisUserModel: ReturnModelType<typeof KattisUser>;
 
   constructor() {
     this.templateModel = TemplateModel;
-    this.kattisCookiesModel = KattisCookieModel;
     this.kattisProblemModel = KattisProblemModel;
+    this.kattisUserModel = KattisUserModel;
   }
 
   public async connect() {
@@ -81,19 +79,28 @@ export default class DatabaseService {
     return this.templateModel.deleteDocument(templateId);
   }
 
-  public async updateUserKattisCookie(userId: string, cookie: string) {
-    let cookieData = await this.kattisCookiesModel.findOne({ userId });
-    if (!cookieData) {
-      cookieData = await this.kattisCookiesModel.create({ userId, cookie });
-    } else {
-      cookieData.cookie = cookie;
-      await cookieData.save();
+  public async updateUserKattis(
+    userDiscordId: string,
+    username: string,
+    password: string
+  ) {
+    const userObj = await this.kattisUserModel.findOne({
+      userDiscordId,
+    });
+    if (!userObj) {
+      return this.kattisUserModel.create({
+        userDiscordId,
+        kattisUsername: username,
+        kattisPassword: password,
+      });
     }
-    return cookieData;
+    userObj.kattisUsername = username;
+    userObj.kattisPassword = password;
+    await userObj.save();
   }
 
-  public async getUserKattisCookie(userId: string) {
-    return this.kattisCookiesModel.findOne({ userId });
+  public async getUserKattis(userDiscordId: string) {
+    return this.kattisUserModel.findOne({ userDiscordId });
   }
 
   public async updateKattisProblemDatabase(problems: KattisProblem[]) {

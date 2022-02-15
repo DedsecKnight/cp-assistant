@@ -1,5 +1,7 @@
 import { singleton } from "tsyringe";
 import fs from "fs";
+import { MessageAttachment } from "discord.js";
+import axios from "axios";
 
 @singleton()
 export default class FileService {
@@ -20,5 +22,10 @@ export default class FileService {
         else resolve(`file/${guildId}_${userId}/${fileName}`);
       });
     });
+  }
+
+  public async extractDiscordAttachmentContent(discordFile: MessageAttachment) {
+    const { data: fileData } = await axios.get<string>(discordFile.url);
+    return fileData;
   }
 }

@@ -1,9 +1,7 @@
-import axios from "axios";
-import { Message } from "discord.js";
+import { Message, MessageEmbed } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
-import { URLSearchParams } from "url";
-import DatabaseService from "../../services/database.service";
+import KattisUtilsService from "../../services/kattis.utils.service";
 
 @singleton()
 @injectable()
@@ -13,7 +11,7 @@ export default class LoginCommand implements ICommand<Message> {
     "Use this command to login into Kattis. Please use this command through DM.";
   public commandParams: string[] = ["username", "password"];
 
-  constructor(private databaseService: DatabaseService) {}
+  constructor(private kattisUtilsService: KattisUtilsService) {}
 
   public async execute(
     message: Message<boolean>,
@@ -28,25 +26,26 @@ export default class LoginCommand implements ICommand<Message> {
     const user = args[2];
     const password = args[3];
 
-    const params = new URLSearchParams({ user, password, script: "true" });
-
     try {
-      const res = await axios.post(
-        process.env.KATTIS_LOGIN_URL!,
-        params.toString(),
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      );
-
-      await this.databaseService.updateUserKattisCookie(
+      const secretKey = await this.kattisUtilsService.updateUserCredentials(
         message.author.id,
-        res.headers["set-cookie"]![0].split("; ")[0]
+        user,
+        password
       );
 
-      return message.author.send("Login succesfully!");
+      const embed = new MessageEmbed();
+      embed.setColor("GREEN");
+
+      embed.addField(
+        "Click below to reveal your secret key",
+        `\|\|\`${secretKey}\`\|\|`
+      );
+      embed.addField(
+        "Note",
+        `Please make sure that only you will have access to this key. To regenerate it, please login again.`
+      );
+
+      return message.author.send({ embeds: [embed] });
     } catch (error) {
       console.error(error);
       return message.author.send("Login failed");

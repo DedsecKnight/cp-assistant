@@ -1,11 +1,9 @@
-import axios from "axios";
-import { Message } from "discord.js";
+import { Message, MessageEmbed } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
-import DatabaseService from "../../services/database.service";
-import FormData from "@discordjs/form-data";
-import fs from "fs";
 import FileService from "../../services/file.service";
+import KattisUtilsService from "../../services/kattis.utils.service";
+import KattisUser from "../../entity/user.kattis.entity";
 
 @singleton()
 @injectable()
@@ -13,24 +11,82 @@ export default class SubmitCommand implements ICommand<Message> {
   public commandName: string = "submit";
   public commandDescription: string =
     "Submit your code to Kattis. Please login before using this command. Attach solution file along with command message.";
-  public commandParams: string[] = ["problem_id"];
+  public commandParams: string[] = ["problem_id", "secret_key"];
 
   constructor(
-    private databaseService: DatabaseService,
+    private kattisUtilsService: KattisUtilsService,
     private fileService: FileService
   ) {}
 
-  private getSubmissionId(response: string) {
-    const submissionId = response.substring(36);
-    return submissionId.substring(0, submissionId.length - 1);
+  private wait(milliseconds: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve();
+      }, milliseconds);
+    });
+  }
+
+  private async trackSubmissionStatus(
+    userMsg: Message,
+    userData: KattisUser,
+    userSecretKey: string,
+    submissionId: string
+  ) {
+    const embed = new MessageEmbed();
+    embed.setTitle("Fetching Submission Data...");
+
+    const message = await userMsg.author.send({ embeds: [embed] });
+
+    const cookieData = await this.kattisUtilsService.generateKattisCookie(
+      userData.kattisUsername,
+      userData.kattisPassword,
+      userSecretKey
+    );
+    while (true) {
+      const {
+        statusId,
+        verdicts,
+        statusCode: responseStatusCode,
+      } = await this.kattisUtilsService.getSubmissionData(
+        cookieData.cookie!,
+        submissionId
+      );
+
+      if (responseStatusCode !== 200) {
+        embed.setTitle("Error getting data from Kattis.");
+        await message.edit({ embeds: [embed] });
+        break;
+      }
+
+      embed.setTitle(this.kattisUtilsService.getSubmissionStatusById(statusId));
+      embed.setDescription(verdicts.join(" "));
+      await message.edit({ embeds: [embed] });
+
+      if (this.kattisUtilsService.judgeFinished(statusId)) {
+        break;
+      }
+      await this.wait(250);
+    }
   }
 
   public async execute(
     message: Message<boolean>,
     args: string[]
   ): Promise<any> {
+    if (message.channel.type !== "DM") {
+      return message.author.send(
+        "This command can only be used in DM. If you accidentally exposed your credentials on a public server, please update your credentials and login again"
+      );
+    }
+
     if (args.length < 3) {
       return message.author.send("Problem ID is required");
+    }
+
+    if (args.length < 4) {
+      return message.author.send(
+        "Secret key is required to use this functionality"
+      );
     }
 
     const submissionFiles = message.attachments;
@@ -45,28 +101,35 @@ export default class SubmitCommand implements ICommand<Message> {
     }
 
     const problemId = args[2].toLowerCase();
-    const cookieData = await this.databaseService.getUserKattisCookie(
+    const userSecretKey = args[3];
+    const userData = await this.kattisUtilsService.getKattisUser(
       message.author.id
     );
 
-    if (!cookieData) {
+    if (!userData) {
       return message.author.send(
-        "Please login through DM using `!kattis login` to use this feature."
+        "Your credentials cannot be found. Please login again using `!kattis login` command"
       );
     }
 
-    const formData = new FormData();
+    const cookieData = await this.kattisUtilsService.generateKattisCookie(
+      userData.kattisUsername,
+      userData.kattisPassword,
+      userSecretKey
+    );
 
-    formData.append("submit", "true");
-    formData.append("submit_ctr", 2);
-    formData.append("language", "C++");
-    formData.append("problem", problemId);
-    formData.append("script", "true");
+    if (cookieData.statusCode !== 200) {
+      return message.author.send(
+        "Failed to authenticate with Kattis. Please make sure that your credentials is correct and try again later"
+      );
+    }
 
     const submissionFile = submissionFiles.first()!;
     const fileName = submissionFile.name!;
 
-    const { data: fileData } = await axios.get<string>(submissionFile!.url);
+    const fileData = await this.fileService.extractDiscordAttachmentContent(
+      submissionFile
+    );
     const filepath = await this.fileService.createFile(
       message.guildId || "",
       message.author.id,
@@ -74,27 +137,18 @@ export default class SubmitCommand implements ICommand<Message> {
       fileData
     );
 
-    formData.append("sub_file[]", fs.createReadStream(filepath), {
-      contentType: "application/octet-stream",
-    });
-
-    try {
-      const res = await axios.post(process.env.KATTIS_SUBMIT_URL!, formData, {
-        headers: {
-          Cookie: cookieData.cookie,
-          "Content-Type": `multipart/form-data; boundary=${formData.getBoundary()}`,
-        },
-      });
-
-      return message.author.send(
-        `Submission sucessful! View your submission here: ${process.env
-          .KATTIS_SUBMISSIONS_URL!}/${this.getSubmissionId(res.data)}`
+    const { statusCode, submissionId } =
+      await this.kattisUtilsService.submitSolution(
+        problemId,
+        filepath,
+        cookieData.cookie
       );
-    } catch (error: any) {
-      fs.writeFileSync("file/error.txt", error.response.data);
+    if (statusCode >= 400) {
       return message.author.send(
         "Submission command is not working at the moment. Please try again later"
       );
     }
+
+    this.trackSubmissionStatus(message, userData, userSecretKey, submissionId);
   }
 }
