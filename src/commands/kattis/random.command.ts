@@ -51,7 +51,7 @@ export default class RandomCommand implements ICommand<Message> {
     );
     embed.addField(
       "Problem URL",
-      `https://open.kattis.com/problems/${problem.problemId}`
+      `${process.env.KATTIS_PROBLEM_URL!}/${problem.problemId}`
     );
 
     return message.channel.send({ embeds: [embed] });

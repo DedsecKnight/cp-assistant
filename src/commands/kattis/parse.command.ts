@@ -13,7 +13,7 @@ export default class ParseContestCommand implements ICommand<Message> {
 
   private async getProblemUrls(contestId: string) {
     const { data: htmlData } = await axios.get(
-      `https://open.kattis.com/contests/${contestId}/problems`
+      `${process.env.KATTIS_CONTEST_URL!}/${contestId}/problems`
     );
     const parsedPage = parse(htmlData);
     const problems = parsedPage
@@ -26,9 +26,8 @@ export default class ParseContestCommand implements ICommand<Message> {
           ?.querySelector("a")
           ?.getAttribute("href");
         const startIndex = contestProblemUrl!.indexOf("/problems");
-        const problemLink = `https://open.kattis.com${contestProblemUrl?.substring(
-          startIndex
-        )}`;
+        const problemLink = `${process.env
+          .KATTIS_BASE_URL!}${contestProblemUrl?.substring(startIndex)}`;
         return { problemLink, letter: String.fromCharCode(65 + idx) };
       });
 

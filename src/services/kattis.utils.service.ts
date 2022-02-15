@@ -48,7 +48,8 @@ export default class KattisUtilsService {
     cookieData: string,
     submissionId: string
   ): Promise<WithResponseStatusCode<{ statusId: number; verdicts: string[] }>> {
-    const submissionUrl = `https://open.kattis.com/submissions/${submissionId}?json`;
+    const submissionUrl = `${process.env
+      .KATTIS_SUBMISSIONS_URL!}/${submissionId}?json`;
     try {
       const { data: htmlData } = await axios.get(submissionUrl, {
         headers: {
