@@ -10,7 +10,7 @@ import KattisUser from "../../entity/user.kattis.entity";
 export default class SubmitCommand implements ICommand<Message> {
   public commandName: string = "submit";
   public commandDescription: string =
-    "Submit your code to Kattis. Please login before using this command. Attach solution file along with command message.";
+    "Submit your code to Kattis. Include solution file and secret key along with command message. Command will only works on DM.";
   public commandParams: string[] = ["problem_id", "secret_key"];
 
   constructor(

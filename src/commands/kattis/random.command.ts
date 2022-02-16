@@ -8,7 +8,7 @@ import KattisUtilsService from "../../services/kattis.utils.service";
 export default class RandomCommand implements ICommand<Message> {
   public commandName: string = "random";
   public commandDescription: string =
-    "Generate a random problem within a provided range of difficulty";
+    "Generate a random problem within a provided range of difficulty.";
   public commandParams: string[] = [
     "low_bound_difficulty",
     "high_bound_difficulty",

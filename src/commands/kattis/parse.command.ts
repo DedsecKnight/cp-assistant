@@ -8,7 +8,7 @@ import { KattisContestProblem } from "../../entity/problem.kattis.entity";
 @singleton()
 export default class ParseContestCommand implements ICommand<Message> {
   public commandName: string = "parse";
-  public commandDescription: string = "Parse a contest with given id";
+  public commandDescription: string = "Parse a contest with given contest ID.";
   public commandParams: string[] = ["contest_id"];
 
   private async getProblemUrls(contestId: string): Promise<

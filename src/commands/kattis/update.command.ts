@@ -8,7 +8,7 @@ import KattisUtilsService from "../../services/kattis.utils.service";
 export default class UpdateCommand implements ICommand<Message> {
   public commandName: string = "update";
   public commandDescription: string =
-    "Use this command to update the problem database";
+    "Use this command to update the problem database.";
   public commandParams: string[] = [];
 
   constructor(private kattisUtilsService: KattisUtilsService) {}
