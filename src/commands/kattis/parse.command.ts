@@ -11,12 +11,18 @@ export default class ParseContestCommand implements ICommand<Message> {
   public commandDescription: string = "Parse a contest with given id";
   public commandParams: string[] = ["contest_id"];
 
-  private async getProblemUrls(contestId: string) {
+  private async getProblemUrls(contestId: string): Promise<
+    WithResponseStatusCode<{
+      contestName: string;
+      problemLinks: Array<{ problemLink: string; letter: string }>;
+    }>
+  > {
     try {
       const { data: htmlData } = await axios.get(
         `${process.env.KATTIS_CONTEST_URL!}/${contestId}/problems`
       );
       const parsedPage = parse(htmlData);
+      const contestName = parsedPage.querySelector("h2.title")!.innerText;
       const problems = parsedPage
         .querySelector("#contest_problem_list")
         ?.querySelector("tbody")
@@ -32,9 +38,17 @@ export default class ParseContestCommand implements ICommand<Message> {
           return { problemLink, letter: String.fromCharCode(65 + idx) };
         });
 
-      return problems || [];
+      return {
+        statusCode: 200,
+        contestName,
+        problemLinks: problems || [],
+      };
     } catch (error) {
-      return [];
+      return {
+        statusCode: 400,
+        contestName: "",
+        problemLinks: [],
+      };
     }
   }
 
@@ -68,16 +82,21 @@ export default class ParseContestCommand implements ICommand<Message> {
     }
     const contestId = args[2];
 
-    const problemLinks = await this.getProblemUrls(contestId);
+    const { statusCode, contestName, problemLinks } = await this.getProblemUrls(
+      contestId
+    );
     const embed = new MessageEmbed();
     embed.setColor("ORANGE");
 
-    if (problemLinks.length === 0) {
+    if (statusCode !== 200) {
       embed.setDescription(
         "Contest is not parseable. Please try again with another contest ID"
       );
       return message.channel.send({ embeds: [embed] });
     }
+
+    embed.setTitle("Fetching problem data...");
+    const replyMessage = await message.channel.send({ embeds: [embed] });
 
     for (let { problemLink, letter } of problemLinks) {
       const {
@@ -91,6 +110,8 @@ export default class ParseContestCommand implements ICommand<Message> {
       );
     }
 
-    return message.channel.send({ embeds: [embed] });
+    embed.setTitle(contestName);
+
+    return replyMessage.edit({ embeds: [embed] });
   }
 }
