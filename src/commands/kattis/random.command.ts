@@ -20,8 +20,8 @@ export default class RandomCommand implements ICommand<Message> {
     message: Message<boolean>,
     args: string[]
   ): Promise<any> {
-    const lowBound = parseInt(args[2]);
-    const highBound = parseInt(args[3]);
+    const lowBound = parseFloat(args[2]);
+    const highBound = parseFloat(args[3]);
 
     if (isNaN(lowBound) || isNaN(highBound) || lowBound > highBound) {
       return message.channel.send(
