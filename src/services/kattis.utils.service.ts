@@ -7,6 +7,7 @@ import { parse } from "node-html-parser";
 import { RUNNING_STATUS, STATUS_MAP } from "../constants/kattis.constant";
 import fs from "fs";
 import FormData from "@discordjs/form-data";
+import KattisProblem from "../entity/problem.kattis.entity";
 
 @singleton()
 @injectable()
@@ -136,7 +137,7 @@ export default class KattisUtilsService {
     return this.databaseService.getUserKattis(userDiscordId);
   }
 
-  private decryptPassword(encryptedPassword: string, userKey: string) {
+  public decryptKattisPassword(encryptedPassword: string, userKey: string) {
     const iv = Buffer.from(process.env.KATTIS_IV!, "hex");
     const decryptCipher = crypto.createDecipheriv(
       "aes256",
@@ -152,11 +153,8 @@ export default class KattisUtilsService {
 
   public async generateKattisCookie(
     username: string,
-    encryptedPassword: string,
-    userKey: string
+    decryptedPassword: string
   ): Promise<WithResponseStatusCode<{ cookie: string }>> {
-    const decryptedPassword = this.decryptPassword(encryptedPassword, userKey);
-
     const params = new URLSearchParams({
       user: username,
       password: decryptedPassword,
@@ -185,5 +183,48 @@ export default class KattisUtilsService {
         cookie: "",
       };
     }
+  }
+
+  private async getProblemList(): Promise<KattisProblem[]> {
+    const { cookie, statusCode } = await this.generateKattisCookie(
+      process.env.KATTIS_SERVICE_USERNAME!,
+      process.env.KATTIS_SERVICE_PASSWORD!
+    );
+
+    if (statusCode !== 200) {
+      return [];
+    }
+
+    const { data: htmlData } = await axios.get(process.env.KATTIS_SUBMIT_URL!, {
+      headers: {
+        Cookie: cookie,
+      },
+    });
+
+    const parsedJs = parse(htmlData)
+      .querySelectorAll("script")
+      .filter((obj) => obj.parentNode.rawAttrs === 'class="wrap"')[0].innerHTML;
+
+    const startIndex = parsedJs.indexOf('available: [{"problem_id"') + 11;
+    const endIndex = parsedJs.indexOf('placeholder: "Select a problem"') - 14;
+
+    const problems: any[] = JSON.parse(
+      parsedJs.substring(startIndex, endIndex)
+    );
+    return problems.map((problem: any) => ({
+      problemId: problem.problem_name,
+      name: problem.fulltitle,
+      difficulty: parseFloat(problem.problem_difficulty),
+    }));
+  }
+
+  public async updateKattisProblemDatabase() {
+    const problems = await this.getProblemList();
+
+    await this.databaseService.updateKattisProblemDatabase(problems);
+  }
+
+  public async fetchRandomProblem(lowBound: number, highBound: number) {
+    return this.databaseService.generateRandomProblem(lowBound, highBound);
   }
 }

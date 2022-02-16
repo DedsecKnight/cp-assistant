@@ -36,11 +36,14 @@ export default class SubmitCommand implements ICommand<Message> {
     embed.setTitle("Fetching Submission Data...");
 
     const message = await userMsg.author.send({ embeds: [embed] });
+    const decryptedPassword = this.kattisUtilsService.decryptKattisPassword(
+      userData.kattisPassword,
+      userSecretKey
+    );
 
     const cookieData = await this.kattisUtilsService.generateKattisCookie(
       userData.kattisUsername,
-      userData.kattisPassword,
-      userSecretKey
+      decryptedPassword
     );
     while (true) {
       const {
@@ -112,10 +115,13 @@ export default class SubmitCommand implements ICommand<Message> {
       );
     }
 
-    const cookieData = await this.kattisUtilsService.generateKattisCookie(
-      userData.kattisUsername,
+    const decryptedPassword = this.kattisUtilsService.decryptKattisPassword(
       userData.kattisPassword,
       userSecretKey
+    );
+    const cookieData = await this.kattisUtilsService.generateKattisCookie(
+      userData.kattisUsername,
+      decryptedPassword
     );
 
     if (cookieData.statusCode !== 200) {

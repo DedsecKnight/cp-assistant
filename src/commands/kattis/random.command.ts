@@ -1,7 +1,7 @@
 import { Message, MessageEmbed } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
-import DatabaseService from "../../services/database.service";
+import KattisUtilsService from "../../services/kattis.utils.service";
 
 @singleton()
 @injectable()
@@ -14,7 +14,7 @@ export default class RandomCommand implements ICommand<Message> {
     "high_bound_difficulty",
   ];
 
-  constructor(private databaseService: DatabaseService) {}
+  constructor(private kattisUtilsService: KattisUtilsService) {}
 
   public async execute(
     message: Message<boolean>,
@@ -29,7 +29,7 @@ export default class RandomCommand implements ICommand<Message> {
       );
     }
 
-    const problem = await this.databaseService.generateRandomProblem(
+    const problem = await this.kattisUtilsService.fetchRandomProblem(
       lowBound,
       highBound
     );
