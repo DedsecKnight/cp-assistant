@@ -37,7 +37,7 @@ export default class SubmitCommand implements ICommand<Message> {
     embed.setTitle("Fetching Submission Data...");
 
     const message = await userMsg.author.send({ embeds: [embed] });
-    const decryptedPassword = this.kattisUtilsService.decryptKattisPassword(
+    const { decryptedPassword } = this.kattisUtilsService.decryptKattisPassword(
       userData.kattisPassword,
       userSecretKey
     );
@@ -126,10 +126,21 @@ export default class SubmitCommand implements ICommand<Message> {
       );
     }
 
-    const decryptedPassword = this.kattisUtilsService.decryptKattisPassword(
-      userData.kattisPassword,
-      userSecretKey
-    );
+    const { decryptedPassword, statusCode: decryptPasswordStatusCode } =
+      this.kattisUtilsService.decryptKattisPassword(
+        userData.kattisPassword,
+        userSecretKey
+      );
+
+    if (decryptPasswordStatusCode !== 200) {
+      const embed = new MessageEmbed();
+      embed.setDescription(
+        "Invalid secret key. Please make sure that the correct secret key is used"
+      );
+      embed.setColor("RED");
+      return message.author.send({ embeds: [embed] });
+    }
+
     const cookieData = await this.kattisUtilsService.generateKattisCookie(
       userData.kattisUsername,
       decryptedPassword

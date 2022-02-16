@@ -137,18 +137,32 @@ export default class KattisUtilsService {
     return this.databaseService.getUserKattis(userDiscordId);
   }
 
-  public decryptKattisPassword(encryptedPassword: string, userKey: string) {
+  public decryptKattisPassword(
+    encryptedPassword: string,
+    userKey: string
+  ): WithResponseStatusCode<{ decryptedPassword: string }> {
     const iv = Buffer.from(process.env.KATTIS_IV!, "hex");
     const decryptCipher = crypto.createDecipheriv(
       "aes256",
       Buffer.from(userKey, "hex"),
       iv
     );
-    const decryptedPassword =
-      decryptCipher.update(encryptedPassword, "hex", "utf8") +
-      decryptCipher.final("utf8");
+    try {
+      const decryptedPassword =
+        decryptCipher.update(encryptedPassword, "hex", "utf8") +
+        decryptCipher.final("utf8");
 
-    return decryptedPassword;
+      return {
+        statusCode: 200,
+        decryptedPassword,
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        statusCode: 400,
+        decryptedPassword: "",
+      };
+    }
   }
 
   public async generateKattisCookie(
