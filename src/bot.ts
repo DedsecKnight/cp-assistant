@@ -48,6 +48,7 @@ export default class Bot {
 
     this.client.on("messageCreate", async (message) => {
       if (message.author.bot) return;
+      message.content = message.content.replaceAll("||", " ").trim();
       if (!message.content.startsWith("!")) return;
       await this.botModule.run(message);
     });

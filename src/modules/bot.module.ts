@@ -39,7 +39,7 @@ export default class BotModule {
   }
 
   public async run(message: Message) {
-    const args = message.content.trim().split(" ");
+    const args = message.content.split(" ").filter((val) => val !== "");
     const serviceName = args[0].substring(1);
     if (serviceName === "") {
       return this.printServiceInfo(message);
