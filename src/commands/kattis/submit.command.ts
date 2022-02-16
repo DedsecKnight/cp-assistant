@@ -65,20 +65,23 @@ export default class SubmitCommand implements ICommand<Message> {
 
       const currentStatus =
         this.kattisUtilsService.getSubmissionStatusById(statusId);
+      const judgeFinished = this.kattisUtilsService.judgeFinished(statusId);
+
       embed.setTitle(currentStatus);
       embed.setDescription(verdicts.join(" "));
 
-      if (this.kattisUtilsService.judgeFinished(statusId)) {
-        if (currentStatus === "Accepted") {
-          embed.setColor("GREEN");
-        } else {
-          embed.setColor("RED");
-        }
-        await message.edit({ embeds: [embed] });
-        break;
+      if (currentStatus === "Accepted") {
+        embed.setColor("GREEN");
+      } else if (judgeFinished) {
+        embed.setColor("RED");
       }
 
       await message.edit({ embeds: [embed] });
+
+      if (judgeFinished) {
+        break;
+      }
+
       await this.wait(250);
     }
   }
