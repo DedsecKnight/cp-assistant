@@ -31,7 +31,7 @@ export default class KattisService extends IService<Message> {
 
   public async process(message: Message, args: string[]) {
     if (args.length <= 1) {
-      return this.printServiceInfo(message);
+      return this.printServiceInfo(message, "ORANGE");
     }
     const commandName = args[1];
     if (!this.serviceContainer.hasOwnProperty(commandName)) {

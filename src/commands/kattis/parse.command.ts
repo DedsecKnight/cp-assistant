@@ -75,6 +75,7 @@ export default class ParseContestCommand implements ICommand<Message> {
 
     const problemLinks = await this.getProblemUrls(contestId);
     const embed = new MessageEmbed();
+    embed.setColor("ORANGE");
 
     for (let { problemLink, letter } of problemLinks) {
       const {

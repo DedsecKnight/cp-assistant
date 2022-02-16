@@ -25,6 +25,7 @@ export default class BotModule {
 
   public printServiceInfo(message: Message) {
     const embed = new MessageEmbed();
+    embed.setColor("DEFAULT");
     embed.setTitle("CP Assistant's service");
 
     Object.entries(this.serviceMapping).forEach(([serviceName, service]) => {

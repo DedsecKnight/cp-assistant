@@ -41,6 +41,7 @@ export default class RandomCommand implements ICommand<Message> {
     }
 
     const embed = new MessageEmbed();
+    embed.setColor("ORANGE");
 
     embed.setTitle("Random Problem");
     embed.addField("Problem Name", problem.name, true);

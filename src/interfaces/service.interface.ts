@@ -1,4 +1,4 @@
-import { Message, MessageEmbed } from "discord.js";
+import { ColorResolvable, Message, MessageEmbed } from "discord.js";
 import { ICommand } from "./command.interface";
 
 export abstract class IService<T = any> {
@@ -17,8 +17,15 @@ export abstract class IService<T = any> {
     );
   }
   public abstract process(message: Message, args: string[]): Promise<any>;
-  public async printServiceInfo(message: Message<boolean>): Promise<any> {
+  public async printServiceInfo(
+    message: Message<boolean>,
+    color?: ColorResolvable
+  ): Promise<any> {
     const embed = new MessageEmbed();
+    if (color) {
+      embed.setColor(color);
+    }
+
     embed.setTitle(`CP Assistant's ${this.serviceDescription}`);
 
     Object.entries(this.serviceContainer).forEach(([commandName, command]) => {

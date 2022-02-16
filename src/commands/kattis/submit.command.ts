@@ -33,6 +33,7 @@ export default class SubmitCommand implements ICommand<Message> {
     submissionId: string
   ) {
     const embed = new MessageEmbed();
+    embed.setColor("YELLOW");
     embed.setTitle("Fetching Submission Data...");
 
     const message = await userMsg.author.send({ embeds: [embed] });
@@ -57,17 +58,27 @@ export default class SubmitCommand implements ICommand<Message> {
 
       if (responseStatusCode !== 200) {
         embed.setTitle("Error getting data from Kattis.");
+        embed.setColor("RED");
         await message.edit({ embeds: [embed] });
         break;
       }
 
-      embed.setTitle(this.kattisUtilsService.getSubmissionStatusById(statusId));
+      const currentStatus =
+        this.kattisUtilsService.getSubmissionStatusById(statusId);
+      embed.setTitle(currentStatus);
       embed.setDescription(verdicts.join(" "));
-      await message.edit({ embeds: [embed] });
 
       if (this.kattisUtilsService.judgeFinished(statusId)) {
+        if (currentStatus === "Accepted") {
+          embed.setColor("GREEN");
+        } else {
+          embed.setColor("RED");
+        }
+        await message.edit({ embeds: [embed] });
         break;
       }
+
+      await message.edit({ embeds: [embed] });
       await this.wait(250);
     }
   }

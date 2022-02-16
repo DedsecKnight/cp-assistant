@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Message } from "discord.js";
+import { Message, MessageEmbed } from "discord.js";
 import parse from "node-html-parser";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
@@ -18,7 +18,17 @@ export default class UpdateCommand implements ICommand<Message> {
   constructor(private kattisUtilsService: KattisUtilsService) {}
 
   public async execute(message: Message, args: string[]): Promise<any> {
+    const embed = new MessageEmbed();
+    embed.setTitle("Updating problem database...");
+    embed.setColor("YELLOW");
+
+    const replyMessage = await message.channel.send({ embeds: [embed] });
+
     await this.kattisUtilsService.updateKattisProblemDatabase();
-    return message.channel.send("Problem database updated");
+
+    embed.setTitle("Problem database updated!");
+    embed.setColor("GREEN");
+
+    return replyMessage.edit({ embeds: [embed] });
   }
 }
