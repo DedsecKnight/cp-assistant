@@ -12,26 +12,30 @@ export default class ParseContestCommand implements ICommand<Message> {
   public commandParams: string[] = ["contest_id"];
 
   private async getProblemUrls(contestId: string) {
-    const { data: htmlData } = await axios.get(
-      `${process.env.KATTIS_CONTEST_URL!}/${contestId}/problems`
-    );
-    const parsedPage = parse(htmlData);
-    const problems = parsedPage
-      .querySelector("#contest_problem_list")
-      ?.querySelector("tbody")
-      ?.querySelectorAll("tr")
-      .map((obj, idx: number) => {
-        const contestProblemUrl = obj
-          .querySelector("td")
-          ?.querySelector("a")
-          ?.getAttribute("href");
-        const startIndex = contestProblemUrl!.indexOf("/problems");
-        const problemLink = `${process.env
-          .KATTIS_BASE_URL!}${contestProblemUrl?.substring(startIndex)}`;
-        return { problemLink, letter: String.fromCharCode(65 + idx) };
-      });
+    try {
+      const { data: htmlData } = await axios.get(
+        `${process.env.KATTIS_CONTEST_URL!}/${contestId}/problems`
+      );
+      const parsedPage = parse(htmlData);
+      const problems = parsedPage
+        .querySelector("#contest_problem_list")
+        ?.querySelector("tbody")
+        ?.querySelectorAll("tr")
+        .map((obj, idx: number) => {
+          const contestProblemUrl = obj
+            .querySelector("td")
+            ?.querySelector("a")
+            ?.getAttribute("href");
+          const startIndex = contestProblemUrl!.indexOf("/problems");
+          const problemLink = `${process.env
+            .KATTIS_BASE_URL!}${contestProblemUrl?.substring(startIndex)}`;
+          return { problemLink, letter: String.fromCharCode(65 + idx) };
+        });
 
-    return problems!;
+      return problems || [];
+    } catch (error) {
+      return [];
+    }
   }
 
   private async getProblemData(
@@ -55,10 +59,6 @@ export default class ParseContestCommand implements ICommand<Message> {
     };
   }
 
-  private checkContestParsable(contestId: string) {
-    return true;
-  }
-
   public async execute(
     message: Message<boolean>,
     args: string[]
@@ -67,15 +67,17 @@ export default class ParseContestCommand implements ICommand<Message> {
       return message.channel.send("Contest ID is required");
     }
     const contestId = args[2];
-    if (!this.checkContestParsable(contestId)) {
-      return message.channel.send(
-        "Contest is not parseable. Please try again with another contest ID"
-      );
-    }
 
     const problemLinks = await this.getProblemUrls(contestId);
     const embed = new MessageEmbed();
     embed.setColor("ORANGE");
+
+    if (problemLinks.length === 0) {
+      embed.setDescription(
+        "Contest is not parseable. Please try again with another contest ID"
+      );
+      return message.channel.send({ embeds: [embed] });
+    }
 
     for (let { problemLink, letter } of problemLinks) {
       const {
