@@ -1,10 +1,6 @@
-import axios from "axios";
 import { Message, MessageEmbed } from "discord.js";
-import parse from "node-html-parser";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
-import DatabaseService from "../../services/database.service";
-import KattisProblem from "../../entity/problem.kattis.entity";
 import KattisUtilsService from "../../services/kattis.utils.service";
 
 @injectable()
