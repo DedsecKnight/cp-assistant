@@ -1,7 +1,9 @@
-import { Message, MessageEmbed } from "discord.js";
+import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
+import { Embed } from "../../entity/embed.entity";
 import { ICommand } from "../../interfaces/command.interface";
 import DatabaseService from "../../services/database.service";
+import MessageService from "../../services/message.service";
 
 @singleton()
 @injectable()
@@ -10,7 +12,10 @@ export default class ListTemplateCommand implements ICommand<Message> {
   public commandDescription: string = "List all templates that user has";
   public commandParams: string[] = [];
 
-  constructor(private databaseService: DatabaseService) {}
+  constructor(
+    private databaseService: DatabaseService,
+    private messageService: MessageService
+  ) {}
 
   public async execute(message: Message<boolean>, args: string[]) {
     const guildId = message.member!.guild.id;
@@ -22,22 +27,24 @@ export default class ListTemplateCommand implements ICommand<Message> {
       guildId
     );
 
-    const embed = new MessageEmbed();
-    embed.setColor("#0099ff");
-    embed.setTitle(
-      `${message.author.username}#${message.author.discriminator}'s template repository`
-    );
+    const embedConfig: Partial<Embed> = {
+      color: "#0099ff",
+      title: `${message.author.username}#${message.author.discriminator}'s template repository`,
+    };
 
     if (templates.length === 0) {
-      embed.setDescription("No template found");
+      embedConfig.description = "No template found";
     }
 
+    embedConfig.fields = [];
+
     templates.forEach((template, idx) => {
-      embed.addField(`Template #${idx + 1}`, template.fileName);
+      embedConfig.fields!.push({
+        name: `Template #${idx + 1}`,
+        value: template.fileName,
+      });
     });
 
-    return channel.send({
-      embeds: [embed],
-    });
+    return this.messageService.sendEmbedMessage(message.channel, embedConfig);
   }
 }

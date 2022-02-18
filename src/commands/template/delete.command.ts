@@ -2,6 +2,7 @@ import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
 import DatabaseService from "../../services/database.service";
+import MessageService from "../../services/message.service";
 
 @singleton()
 @injectable()
@@ -10,11 +11,17 @@ export default class DeleteTemplateCommand implements ICommand<Message> {
   public commandDescription: string = "Delete template with specified filename";
   public commandParams: string[] = ["filename"];
 
-  constructor(private databaseService: DatabaseService) {}
+  constructor(
+    private databaseService: DatabaseService,
+    private messageService: MessageService
+  ) {}
 
   public async execute(message: Message, args: string[]) {
     if (args.length < 2) {
-      return message.reply("A filename is required. Please try again");
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description: "A filename is required. Please try again",
+      });
     }
 
     const userId = message.member!.user.id;
@@ -28,14 +35,17 @@ export default class DeleteTemplateCommand implements ICommand<Message> {
     );
 
     if (!template) {
-      return message.reply(
-        "Cannot find requested template. Please check your filename"
-      );
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description:
+          "Cannot find requested template. Please check your filename",
+      });
     }
 
     await this.databaseService.deleteTemplate(template._id);
-    return message.channel.send(
-      `${fileName} deleted from ${message.author.username}#${message.author.discriminator}'s repository`
-    );
+    return this.messageService.sendEmbedMessage(message.channel, {
+      color: "GREEN",
+      description: `${fileName} deleted from ${message.author.username}#${message.author.discriminator}'s repository`,
+    });
   }
 }

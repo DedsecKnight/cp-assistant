@@ -4,6 +4,7 @@ import { ICommand } from "../../interfaces/command.interface";
 import DatabaseService from "../../services/database.service";
 import FileService from "../../services/file.service";
 import fs from "fs";
+import MessageService from "../../services/message.service";
 
 @singleton()
 @injectable()
@@ -14,12 +15,16 @@ export default class GetTemplateCommand implements ICommand<Message> {
 
   constructor(
     private databaseService: DatabaseService,
-    private fileService: FileService
+    private fileService: FileService,
+    private messageService: MessageService
   ) {}
 
   public async execute(message: Message, args: string[]) {
     if (args.length < 2) {
-      return message.reply("A filename is required. Please try again");
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description: "A filename is required. Please try again",
+      });
     }
 
     const userId = message.member!.user.id;
@@ -32,9 +37,11 @@ export default class GetTemplateCommand implements ICommand<Message> {
     );
 
     if (!template) {
-      return message.reply(
-        "Cannot find requested template. Please check your filename"
-      );
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description:
+          "Cannot find requested template. Please check your filename",
+      });
     }
 
     const filePath = await this.fileService.createFile(

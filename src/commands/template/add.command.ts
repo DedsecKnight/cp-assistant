@@ -3,6 +3,7 @@ import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
 import axios from "axios";
 import DatabaseService from "../../services/database.service";
+import MessageService from "../../services/message.service";
 
 @singleton()
 @injectable()
@@ -12,7 +13,10 @@ export default class AddTemplateCommand implements ICommand<Message> {
     "Add a new template. If template with same name already exists, the old one will be overwritten. Attach template along with command message";
   public commandParams: string[] = [];
 
-  constructor(private databaseService: DatabaseService) {}
+  constructor(
+    private databaseService: DatabaseService,
+    private messageService: MessageService
+  ) {}
 
   public async execute(message: Message, args: string[]) {
     const channel = message.channel;
@@ -43,6 +47,9 @@ export default class AddTemplateCommand implements ICommand<Message> {
       );
     });
 
-    return channel.send("Template added to database");
+    return this.messageService.sendEmbedMessage(channel, {
+      color: "GREEN",
+      description: "Template added to database",
+    });
   }
 }

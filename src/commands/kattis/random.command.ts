@@ -2,6 +2,7 @@ import { Message, MessageEmbed } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
 import KattisUtilsService from "../../services/kattis.utils.service";
+import MessageService from "../../services/message.service";
 
 @singleton()
 @injectable()
@@ -14,7 +15,10 @@ export default class RandomCommand implements ICommand<Message> {
     "high_bound_difficulty",
   ];
 
-  constructor(private kattisUtilsService: KattisUtilsService) {}
+  constructor(
+    private kattisUtilsService: KattisUtilsService,
+    private messageService: MessageService
+  ) {}
 
   public async execute(
     message: Message<boolean>,
@@ -24,9 +28,10 @@ export default class RandomCommand implements ICommand<Message> {
     const highBound = parseFloat(args[3]);
 
     if (isNaN(lowBound) || isNaN(highBound) || lowBound > highBound) {
-      return message.channel.send(
-        "Invalid value for difficulty bound(s). Please try again."
-      );
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description: "Invalid value for difficulty bound(s). Please try again.",
+      });
     }
 
     const problem = await this.kattisUtilsService.fetchRandomProblem(
@@ -35,26 +40,28 @@ export default class RandomCommand implements ICommand<Message> {
     );
 
     if (!problem) {
-      return message.channel.send(
-        "No such problem found. Please adjust the difficulty range"
-      );
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description:
+          "No such problem found. Please adjust the difficulty range",
+      });
     }
 
-    const embed = new MessageEmbed();
-    embed.setColor("ORANGE");
-
-    embed.setTitle("Random Problem");
-    embed.addField("Problem Name", problem.name, true);
-    embed.addField(
-      "Problem Difficulty",
-      problem.difficulty.toFixed(1).toString(),
-      true
-    );
-    embed.addField(
-      "Problem URL",
-      `${process.env.KATTIS_PROBLEM_URL!}/${problem.problemId}`
-    );
-
-    return message.channel.send({ embeds: [embed] });
+    return this.messageService.sendEmbedMessage(message.channel, {
+      color: "ORANGE",
+      title: "Random Problem",
+      fields: [
+        { name: "Problem Name", value: problem.name, inline: true },
+        {
+          name: "Problem Difficulty",
+          value: problem.difficulty.toFixed(1).toString(),
+          inline: true,
+        },
+        {
+          name: "Problem URL",
+          value: `${process.env.KATTIS_PROBLEM_URL!}/${problem.problemId}`,
+        },
+      ],
+    });
   }
 }

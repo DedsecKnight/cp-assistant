@@ -4,6 +4,7 @@ import { ICommand } from "../../interfaces/command.interface";
 import FileService from "../../services/file.service";
 import KattisUtilsService from "../../services/kattis.utils.service";
 import KattisUser from "../../entity/user.kattis.entity";
+import MessageService from "../../services/message.service";
 
 @singleton()
 @injectable()
@@ -15,7 +16,8 @@ export default class SubmitCommand implements ICommand<Message> {
 
   constructor(
     private kattisUtilsService: KattisUtilsService,
-    private fileService: FileService
+    private fileService: FileService,
+    private messageService: MessageService
   ) {}
 
   private wait(milliseconds: number): Promise<void> {
@@ -91,30 +93,40 @@ export default class SubmitCommand implements ICommand<Message> {
     args: string[]
   ): Promise<any> {
     if (message.channel.type !== "DM") {
-      return message.author.send(
-        "This command can only be used in DM. If you accidentally exposed your credentials on a public server, please update your credentials and login again"
-      );
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "YELLOW",
+        description:
+          "This command can only be used in DM. If you accidentally exposed your credentials on a public server, please update your credentials and login again",
+      });
     }
 
     if (args.length < 3) {
-      return message.author.send("Problem ID is required");
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description: "Problem ID is required",
+      });
     }
 
     if (args.length < 4) {
-      return message.author.send(
-        "Secret key is required to use this functionality"
-      );
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description: "Secret key is required to use this functionality",
+      });
     }
 
     const submissionFiles = message.attachments;
     if (submissionFiles.size < 1) {
-      return message.author.send(
-        "At least 1 submission file is required. Please try again"
-      );
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description: "At least 1 submission file is required. Please try again",
+      });
     }
 
     if (submissionFiles.size > 1) {
-      return message.author.send("Only 1 file is allowed. Please try again.");
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description: "Only 1 file is allowed. Please try again.",
+      });
     }
 
     const problemId = args[2].toLowerCase();
@@ -124,9 +136,11 @@ export default class SubmitCommand implements ICommand<Message> {
     );
 
     if (!userData) {
-      return message.author.send(
-        "Your credentials cannot be found. Please login again using `!kattis login` command"
-      );
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description:
+          "Your credentials cannot be found. Please login again using `!kattis login` command",
+      });
     }
 
     const { decryptedPassword, statusCode: decryptPasswordStatusCode } =
@@ -136,12 +150,11 @@ export default class SubmitCommand implements ICommand<Message> {
       );
 
     if (decryptPasswordStatusCode !== 200) {
-      const embed = new MessageEmbed();
-      embed.setDescription(
-        "Invalid secret key. Please make sure that the correct secret key is used"
-      );
-      embed.setColor("RED");
-      return message.author.send({ embeds: [embed] });
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description:
+          "Invalid secret key. Please make sure that the correct secret key is used",
+      });
     }
 
     const cookieData = await this.kattisUtilsService.generateKattisCookie(
@@ -150,9 +163,11 @@ export default class SubmitCommand implements ICommand<Message> {
     );
 
     if (cookieData.statusCode !== 200) {
-      return message.author.send(
-        "Failed to authenticate with Kattis. Please make sure that your credentials is correct and try again later"
-      );
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description:
+          "Failed to authenticate with Kattis. Please make sure that your credentials is correct and try again later",
+      });
     }
 
     const submissionFile = submissionFiles.first()!;
@@ -160,13 +175,11 @@ export default class SubmitCommand implements ICommand<Message> {
 
     const fileExtension = this.fileService.getFileExtension(fileName);
     if (!this.kattisUtilsService.isSupportedExtension(fileExtension)) {
-      const embed = new MessageEmbed();
-      embed.setColor("RED");
-      embed.setDescription(
-        "Extension is not supported. Please try again with either C++, Java, or Python 3 submission"
-      );
-
-      return message.channel.send({ embeds: [embed] });
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description:
+          "Extension is not supported. Please try again with either C++, Java, or Python 3 submission",
+      });
     }
 
     const fileData = await this.fileService.extractDiscordAttachmentContent(
@@ -187,9 +200,11 @@ export default class SubmitCommand implements ICommand<Message> {
         fileExtension
       );
     if (statusCode >= 400) {
-      return message.author.send(
-        "Submission command is not working at the moment. Please try again later"
-      );
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "YELLOW",
+        description:
+          "Submission command is not working at the moment. Please try again later",
+      });
     }
 
     this.trackSubmissionStatus(message, userData, userSecretKey, submissionId);
