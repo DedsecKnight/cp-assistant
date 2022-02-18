@@ -28,4 +28,8 @@ export default class FileService {
     const { data: fileData } = await axios.get<string>(discordFile.url);
     return fileData;
   }
+
+  public getFileExtension(filename: string) {
+    return filename.substring(filename.indexOf("."));
+  }
 }

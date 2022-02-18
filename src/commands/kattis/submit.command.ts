@@ -158,6 +158,17 @@ export default class SubmitCommand implements ICommand<Message> {
     const submissionFile = submissionFiles.first()!;
     const fileName = submissionFile.name!;
 
+    const fileExtension = this.fileService.getFileExtension(fileName);
+    if (!this.kattisUtilsService.isSupportedExtension(fileExtension)) {
+      const embed = new MessageEmbed();
+      embed.setColor("RED");
+      embed.setDescription(
+        "Extension is not supported. Please try again with either C++, Java, or Python 3 submission"
+      );
+
+      return message.channel.send({ embeds: [embed] });
+    }
+
     const fileData = await this.fileService.extractDiscordAttachmentContent(
       submissionFile
     );
@@ -172,7 +183,8 @@ export default class SubmitCommand implements ICommand<Message> {
       await this.kattisUtilsService.submitSolution(
         problemId,
         filepath,
-        cookieData.cookie
+        cookieData.cookie,
+        fileExtension
       );
     if (statusCode >= 400) {
       return message.author.send(

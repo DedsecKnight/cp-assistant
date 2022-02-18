@@ -13,6 +13,11 @@ import KattisProblem from "../entity/problem.kattis.entity";
 @injectable()
 export default class KattisUtilsService {
   constructor(private databaseService: DatabaseService) {}
+  private languageMapping: Record<string, string> = {
+    ".cpp": "C++",
+    ".java": "Java",
+    ".py": "Python 3",
+  };
 
   private encryptPassword(password: string) {
     const secretKey = crypto.randomBytes(32);
@@ -27,6 +32,10 @@ export default class KattisUtilsService {
       encryptedPassword,
       secretKey: secretKey.toString("hex"),
     };
+  }
+
+  public isSupportedExtension(extension: string) {
+    return this.languageMapping.hasOwnProperty(extension);
   }
 
   public async updateUserCredentials(
@@ -90,13 +99,14 @@ export default class KattisUtilsService {
   public async submitSolution(
     problemId: string,
     submissionFilePath: string,
-    userCookie: string
+    userCookie: string,
+    extension: string
   ): Promise<WithResponseStatusCode<{ submissionId: string }>> {
     const formData = new FormData();
 
     formData.append("submit", "true");
     formData.append("submit_ctr", 2);
-    formData.append("language", "C++");
+    formData.append("language", this.languageMapping[extension]);
     formData.append("problem", problemId);
     formData.append("script", "true");
 
