@@ -1,15 +1,20 @@
-import { Message, MessageEmbed } from "discord.js";
-import { singleton } from "tsyringe";
+import { Message } from "discord.js";
+import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
 import { parse } from "node-html-parser";
 import axios from "axios";
 import { KattisContestProblem } from "../../entity/problem.kattis.entity";
+import { Embed } from "../../entity/embed.entity";
+import MessageService from "../../services/message.service";
 
 @singleton()
+@injectable()
 export default class ParseContestCommand implements ICommand<Message> {
   public commandName: string = "parse";
   public commandDescription: string = "Parse a contest with given contest ID.";
   public commandParams: string[] = ["contest_id"];
+
+  constructor(private messageService: MessageService) {}
 
   private async getProblemUrls(contestId: string): Promise<
     WithResponseStatusCode<{
@@ -85,18 +90,25 @@ export default class ParseContestCommand implements ICommand<Message> {
     const { statusCode, contestName, problemLinks } = await this.getProblemUrls(
       contestId
     );
-    const embed = new MessageEmbed();
-    embed.setColor("ORANGE");
+
+    const embedConfig: Partial<Embed> = {
+      color: "ORANGE",
+    };
 
     if (statusCode !== 200) {
-      embed.setDescription(
-        "Contest is not parseable. Please try again with another contest ID"
-      );
-      return message.channel.send({ embeds: [embed] });
+      return this.messageService.sendEmbedMessage(message.channel, {
+        ...embedConfig,
+        description:
+          "Contest is not parseable. Please try again with another contest ID",
+      });
     }
 
-    embed.setTitle("Fetching problem data...");
-    const replyMessage = await message.channel.send({ embeds: [embed] });
+    embedConfig.title = "Fetching problem data...";
+    embedConfig.fields = [];
+    const replyMessage = await this.messageService.sendEmbedMessage(
+      message.channel,
+      embedConfig
+    );
 
     for (let { problemLink, letter } of problemLinks) {
       const {
@@ -104,14 +116,14 @@ export default class ParseContestCommand implements ICommand<Message> {
         difficulty,
         name,
       } = await this.getProblemData(problemLink, letter);
-      embed.addField(
-        `Problem ${problemLetter}: ${name}`,
-        difficulty!.toString()
-      );
+      embedConfig.fields.push({
+        name: `Problem ${problemLetter}: ${name}`,
+        value: difficulty!.toString(),
+      });
     }
 
-    embed.setTitle(contestName);
+    embedConfig.title = contestName;
 
-    return replyMessage.edit({ embeds: [embed] });
+    return this.messageService.editEmbedMessage(replyMessage, embedConfig);
   }
 }

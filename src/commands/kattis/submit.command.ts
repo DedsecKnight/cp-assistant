@@ -1,10 +1,11 @@
-import { Message, MessageEmbed } from "discord.js";
+import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
 import FileService from "../../services/file.service";
 import KattisUtilsService from "../../services/kattis.utils.service";
 import KattisUser from "../../entity/user.kattis.entity";
 import MessageService from "../../services/message.service";
+import { Embed } from "../../entity/embed.entity";
 
 @singleton()
 @injectable()
@@ -34,11 +35,16 @@ export default class SubmitCommand implements ICommand<Message> {
     userSecretKey: string,
     submissionId: string
   ) {
-    const embed = new MessageEmbed();
-    embed.setColor("YELLOW");
-    embed.setTitle("Fetching Submission Data...");
+    const embedConfig: Partial<Embed> = {
+      color: "YELLOW",
+      title: "Fetching Submission Data...",
+    };
 
-    const message = await userMsg.author.send({ embeds: [embed] });
+    const message = await this.messageService.sendEmbedMessage(
+      userMsg.channel,
+      embedConfig
+    );
+
     const { decryptedPassword } = this.kattisUtilsService.decryptKattisPassword(
       userData.kattisPassword,
       userSecretKey
@@ -59,9 +65,9 @@ export default class SubmitCommand implements ICommand<Message> {
       );
 
       if (responseStatusCode !== 200) {
-        embed.setTitle("Error getting data from Kattis.");
-        embed.setColor("RED");
-        await message.edit({ embeds: [embed] });
+        embedConfig.title = "Error getting data from Kattis.";
+        embedConfig.color = "RED";
+        await this.messageService.editEmbedMessage(message, embedConfig);
         break;
       }
 
@@ -69,16 +75,16 @@ export default class SubmitCommand implements ICommand<Message> {
         this.kattisUtilsService.getSubmissionStatusById(statusId);
       const judgeFinished = this.kattisUtilsService.judgeFinished(statusId);
 
-      embed.setTitle(currentStatus);
-      embed.setDescription(verdicts.join(" "));
+      embedConfig.title = currentStatus;
+      embedConfig.description = verdicts.join(" ");
 
       if (currentStatus === "Accepted") {
-        embed.setColor("GREEN");
+        embedConfig.color = "GREEN";
       } else if (judgeFinished) {
-        embed.setColor("RED");
+        embedConfig.color = "RED";
       }
 
-      await message.edit({ embeds: [embed] });
+      await this.messageService.editEmbedMessage(message, embedConfig);
 
       if (judgeFinished) {
         break;
