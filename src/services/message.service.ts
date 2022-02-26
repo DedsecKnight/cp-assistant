@@ -1,13 +1,10 @@
-import { MessageEmbed, TextBasedChannel } from "discord.js";
+import { Message, MessageEmbed, TextBasedChannel } from "discord.js";
 import { singleton } from "tsyringe";
 import { Embed } from "../entity/embed.entity";
 
 @singleton()
 export default class MessageService {
-  public async sendEmbedMessage(
-    channel: TextBasedChannel,
-    embedData: Partial<Embed>
-  ) {
+  private generateEmbed(embedData: Partial<Embed>) {
     const embed = new MessageEmbed();
     if (embedData.title) {
       embed.setTitle(embedData.title);
@@ -23,7 +20,17 @@ export default class MessageService {
         embed.addField(name, value, inline || false);
       });
     }
+    return embed;
+  }
 
-    return channel.send({ embeds: [embed] });
+  public async sendEmbedMessage(
+    channel: TextBasedChannel,
+    embedData: Partial<Embed>
+  ) {
+    return channel.send({ embeds: [this.generateEmbed(embedData)] });
+  }
+
+  public async editEmbedMessage(message: Message, embedData: Partial<Embed>) {
+    return message.edit({ embeds: [this.generateEmbed(embedData)] });
   }
 }
