@@ -5,7 +5,7 @@ import { parse } from "node-html-parser";
 import axios from "axios";
 import { KattisContestProblem } from "../../entity/problem.kattis.entity";
 import { Embed } from "../../entity/embed.entity";
-import MessageService from "../../services/message.service";
+import MessageService from "../../services/utilities/message.service";
 
 @singleton()
 @injectable()

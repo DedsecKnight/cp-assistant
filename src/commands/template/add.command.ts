@@ -2,8 +2,8 @@ import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
 import axios from "axios";
-import DatabaseService from "../../services/database.service";
-import MessageService from "../../services/message.service";
+import MessageService from "../../services/utilities/message.service";
+import TemplateDatabaseService from "../../services/template/database.service";
 
 @singleton()
 @injectable()
@@ -14,7 +14,7 @@ export default class AddTemplateCommand implements ICommand<Message> {
   public commandParams: string[] = [];
 
   constructor(
-    private databaseService: DatabaseService,
+    private databaseService: TemplateDatabaseService,
     private messageService: MessageService
   ) {}
 

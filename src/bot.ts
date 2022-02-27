@@ -2,16 +2,13 @@ import { Client, Intents } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import BotModule from "./modules/bot.module";
 import play from "play-dl";
-import DatabaseService from "./services/database.service";
+import mongoose from "mongoose";
 
 @injectable()
 @singleton()
 export default class Bot {
   private client: Client;
-  constructor(
-    private botModule: BotModule,
-    private databaseService: DatabaseService
-  ) {
+  constructor(private botModule: BotModule) {
     this.client = new Client({
       intents: [
         Intents.FLAGS.GUILDS,
@@ -24,7 +21,7 @@ export default class Bot {
     });
   }
 
-  public async registerSoundCloudClientID() {
+  private async registerSoundCloudClientID() {
     const clientID = await play.getFreeClientID();
     play.setToken({
       soundcloud: {
@@ -33,9 +30,18 @@ export default class Bot {
     });
   }
 
+  private async connectToDatabase() {
+    return mongoose.connect(process.env.MONGODB_URI!, {
+      minPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4,
+    });
+  }
+
   public async initialize(): Promise<string> {
     try {
-      await this.databaseService.connect();
+      await this.connectToDatabase();
       console.log("Connected to MongoDB");
     } catch (error) {
       console.error(error);

@@ -1,6 +1,6 @@
 import { Message, MessageEmbed, TextBasedChannel } from "discord.js";
 import { singleton } from "tsyringe";
-import { Embed } from "../entity/embed.entity";
+import { Embed } from "../../entity/embed.entity";
 
 @singleton()
 export default class MessageService {

@@ -1,10 +1,10 @@
 import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
-import DatabaseService from "../../services/database.service";
-import FileService from "../../services/file.service";
+import FileService from "../../services/utilities/file.service";
 import fs from "fs";
-import MessageService from "../../services/message.service";
+import MessageService from "../../services/utilities/message.service";
+import TemplateDatabaseService from "../../services/template/database.service";
 
 @singleton()
 @injectable()
@@ -14,7 +14,7 @@ export default class GetTemplateCommand implements ICommand<Message> {
   public commandParams: string[] = ["filename"];
 
   constructor(
-    private databaseService: DatabaseService,
+    private databaseService: TemplateDatabaseService,
     private fileService: FileService,
     private messageService: MessageService
   ) {}

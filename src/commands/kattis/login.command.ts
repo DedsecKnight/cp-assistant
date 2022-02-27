@@ -1,8 +1,8 @@
 import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
-import KattisUtilsService from "../../services/kattis.utils.service";
-import MessageService from "../../services/message.service";
+import KattisUtilsService from "../../services/kattis/utilities.service";
+import MessageService from "../../services/utilities/message.service";
 
 @singleton()
 @injectable()

@@ -1,10 +1,10 @@
 import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
-import FileService from "../../services/file.service";
-import KattisUtilsService from "../../services/kattis.utils.service";
+import FileService from "../../services/utilities/file.service";
+import KattisUtilsService from "../../services/kattis/utilities.service";
 import KattisUser from "../../entity/user.kattis.entity";
-import MessageService from "../../services/message.service";
+import MessageService from "../../services/utilities/message.service";
 import { Embed } from "../../entity/embed.entity";
 
 @singleton()

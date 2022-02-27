@@ -1,8 +1,8 @@
 import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
-import DatabaseService from "../../services/database.service";
-import MessageService from "../../services/message.service";
+import TemplateDatabaseService from "../../services/template/database.service";
+import MessageService from "../../services/utilities/message.service";
 
 @singleton()
 @injectable()
@@ -12,7 +12,7 @@ export default class DeleteTemplateCommand implements ICommand<Message> {
   public commandParams: string[] = ["filename"];
 
   constructor(
-    private databaseService: DatabaseService,
+    private databaseService: TemplateDatabaseService,
     private messageService: MessageService
   ) {}
 

@@ -1,10 +1,10 @@
 import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import AddTemplateCommand from "../commands/template/add.command";
-import DeleteTemplateCommand from "../commands/template/delete.command";
-import GetTemplateCommand from "../commands/template/get.command";
-import ListTemplateCommand from "../commands/template/list.command";
-import { IService } from "../interfaces/service.interface";
+import AddTemplateCommand from "../../commands/template/add.command";
+import DeleteTemplateCommand from "../../commands/template/delete.command";
+import GetTemplateCommand from "../../commands/template/get.command";
+import ListTemplateCommand from "../../commands/template/list.command";
+import { IService } from "../../interfaces/service.interface";
 
 @injectable()
 @singleton()

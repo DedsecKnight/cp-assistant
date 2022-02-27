@@ -1,11 +1,11 @@
 import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import LoginKattisCommand from "../commands/kattis/login.command";
-import ParseKattisContestCommand from "../commands/kattis/parse.command";
-import RandomKattisCommand from "../commands/kattis/random.command";
-import SubmitKattisCommand from "../commands/kattis/submit.command";
-import UpdateKattisCommand from "../commands/kattis/update.command";
-import { IService } from "../interfaces/service.interface";
+import LoginKattisCommand from "../../commands/kattis/login.command";
+import ParseKattisContestCommand from "../../commands/kattis/parse.command";
+import RandomKattisCommand from "../../commands/kattis/random.command";
+import SubmitKattisCommand from "../../commands/kattis/submit.command";
+import UpdateKattisCommand from "../../commands/kattis/update.command";
+import { IService } from "../../interfaces/service.interface";
 
 @singleton()
 @injectable()

@@ -1,9 +1,9 @@
 import { Message, MessageEmbed } from "discord.js";
 import { singleton, injectable } from "tsyringe";
 import { IService } from "../interfaces/service.interface";
-import AudioService from "../services/audio.service";
-import KattisService from "../services/kattis.service";
-import TemplateService from "../services/template.service";
+import AudioService from "../services/audio/bot.service";
+import KattisService from "../services/kattis/bot.service";
+import TemplateService from "../services/template/bot.service";
 
 @singleton()
 @injectable()

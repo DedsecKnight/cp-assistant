@@ -1,18 +1,18 @@
 import axios from "axios";
 import crypto from "crypto";
 import { singleton, injectable } from "tsyringe";
-import DatabaseService from "./database.service";
 import { URLSearchParams } from "url";
 import { parse } from "node-html-parser";
-import { RUNNING_STATUS, STATUS_MAP } from "../constants/kattis.constant";
+import { RUNNING_STATUS, STATUS_MAP } from "../../constants/kattis.constant";
 import fs from "fs";
 import FormData from "@discordjs/form-data";
-import KattisProblem from "../entity/problem.kattis.entity";
+import KattisProblem from "../../entity/problem.kattis.entity";
+import KattisDatabaseService from "./database.service";
 
 @singleton()
 @injectable()
 export default class KattisUtilsService {
-  constructor(private databaseService: DatabaseService) {}
+  constructor(private databaseService: KattisDatabaseService) {}
   private languageMapping: Record<string, string> = {
     ".cpp": "C++",
     ".java": "Java",
@@ -45,7 +45,7 @@ export default class KattisUtilsService {
   ): Promise<string> {
     const { encryptedPassword, secretKey } = this.encryptPassword(password);
 
-    await this.databaseService.updateUserKattis(
+    await this.databaseService.updateUserCredentials(
       userId,
       user,
       encryptedPassword
@@ -144,7 +144,7 @@ export default class KattisUtilsService {
   }
 
   public async getKattisUser(userDiscordId: string) {
-    return this.databaseService.getUserKattis(userDiscordId);
+    return this.databaseService.getUserCredentials(userDiscordId);
   }
 
   public decryptKattisPassword(
@@ -245,7 +245,7 @@ export default class KattisUtilsService {
   public async updateKattisProblemDatabase() {
     const problems = await this.getProblemList();
 
-    await this.databaseService.updateKattisProblemDatabase(problems);
+    await this.databaseService.updateProblemDatabase(problems);
   }
 
   public async fetchRandomProblem(lowBound: number, highBound: number) {
