@@ -2,6 +2,7 @@ import { Message, MessageEmbed } from "discord.js";
 import { singleton, injectable } from "tsyringe";
 import { IService } from "../interfaces/service.interface";
 import AudioService from "../services/audio/bot.service";
+import CodeforcesService from "../services/codeforces/bot.service";
 import KattisService from "../services/kattis/bot.service";
 import TemplateService from "../services/template/bot.service";
 
@@ -12,7 +13,8 @@ export default class BotModule {
   constructor(
     audioService: AudioService,
     templateService: TemplateService,
-    kattisService: KattisService
+    kattisService: KattisService,
+    codeforcesService: CodeforcesService
   ) {
     this.serviceMapping = Array.from(arguments).reduce(
       (acc: typeof this.serviceMapping, service: IService) => ({
