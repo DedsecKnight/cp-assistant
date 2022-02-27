@@ -122,7 +122,9 @@ export default class MusicSubscription {
   }
 
   private async playTrack(track: Track) {
-    const playStream = await stream(track.url);
+    const playStream = await stream(track.url, {
+      discordPlayerCompatibility: true,
+    });
     this.audioPlayer.play(
       createAudioResource(playStream.stream, { inputType: playStream.type })
     );
