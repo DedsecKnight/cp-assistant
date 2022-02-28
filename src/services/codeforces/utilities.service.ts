@@ -1,6 +1,7 @@
 import axios from "axios";
 import { injectable, singleton } from "tsyringe";
 import CodeforcesProblem from "../../entity/problem.codeforces.entity";
+import { RandomProblemGenerateConfig } from "../../interfaces/codeforces.interface";
 import CodeforcesDatabaseService from "./database.service";
 
 @singleton()
@@ -30,6 +31,12 @@ export default class CodeforcesUtilsService {
         problems: [],
       };
     }
+  }
+
+  public async generateRandomProblem(
+    problemConfig: RandomProblemGenerateConfig
+  ) {
+    return this.databaseService.generateRandomProblem(problemConfig);
   }
 
   public async updateProblemDatabase(): Promise<WithResponseStatusCode<any>> {
