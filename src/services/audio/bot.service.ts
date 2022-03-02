@@ -7,7 +7,7 @@ import QueueListCommand from "../../commands/audio/list.command";
 import PauseCommand from "../../commands/audio/pause.command";
 import PlayCommand from "../../commands/audio/play.command";
 import SkipSongCommand from "../../commands/audio/skip.command";
-import MusicSubscription from "../../entity/subscription.entity";
+import MusicSubscription from "../../entity/audio/subscription.entity";
 import { IService } from "../../interfaces/service.interface";
 
 @injectable()

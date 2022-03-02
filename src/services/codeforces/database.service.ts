@@ -2,7 +2,7 @@ import { ReturnModelType } from "@typegoose/typegoose";
 import { singleton } from "tsyringe";
 import CodeforcesProblem, {
   CodeforcesProblemModel,
-} from "../../entity/problem.codeforces.entity";
+} from "../../entity/codeforces/problem.entity";
 import { RandomProblemGenerateConfig } from "../../interfaces/codeforces.interface";
 
 @singleton()

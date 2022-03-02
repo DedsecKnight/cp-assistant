@@ -6,7 +6,7 @@ import { parse } from "node-html-parser";
 import { RUNNING_STATUS, STATUS_MAP } from "../../constants/kattis.constant";
 import fs from "fs";
 import FormData from "@discordjs/form-data";
-import KattisProblem from "../../entity/problem.kattis.entity";
+import KattisProblem from "../../entity/kattis/problem.entity";
 import KattisDatabaseService from "./database.service";
 
 @singleton()

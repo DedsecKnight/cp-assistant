@@ -3,8 +3,8 @@ import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
 import { parse } from "node-html-parser";
 import axios from "axios";
-import { KattisContestProblem } from "../../entity/problem.kattis.entity";
-import { Embed } from "../../entity/embed.entity";
+import { KattisContestProblem } from "../../entity/kattis/problem.entity";
+import { Embed } from "../../entity/utilities/embed.entity";
 import MessageService from "../../services/utilities/message.service";
 
 @singleton()

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { injectable, singleton } from "tsyringe";
-import CodeforcesProblem from "../../entity/problem.codeforces.entity";
+import CodeforcesProblem from "../../entity/codeforces/problem.entity";
 import { RandomProblemGenerateConfig } from "../../interfaces/codeforces.interface";
 import CodeforcesDatabaseService from "./database.service";
 

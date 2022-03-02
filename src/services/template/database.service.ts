@@ -1,7 +1,7 @@
 import { DocumentType, ReturnModelType } from "@typegoose/typegoose";
 import { ObjectId } from "mongoose";
 import { singleton } from "tsyringe";
-import Template, { TemplateModel } from "../../entity/template.entity";
+import Template, { TemplateModel } from "../../entity/template/template.entity";
 
 @singleton()
 export default class TemplateDatabaseService {

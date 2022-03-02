@@ -3,9 +3,9 @@ import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
 import FileService from "../../services/utilities/file.service";
 import KattisUtilsService from "../../services/kattis/utilities.service";
-import KattisUser from "../../entity/user.kattis.entity";
+import KattisUser from "../../entity/kattis/user.entity";
 import MessageService from "../../services/utilities/message.service";
-import { Embed } from "../../entity/embed.entity";
+import { Embed } from "../../entity/utilities/embed.entity";
 
 @singleton()
 @injectable()

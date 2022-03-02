@@ -1,5 +1,5 @@
 import { singleton } from "tsyringe";
-import MusicSubscription from "../../entity/subscription.entity";
+import MusicSubscription from "../../entity/audio/subscription.entity";
 import { ICommand } from "../../interfaces/command.interface";
 
 @singleton()

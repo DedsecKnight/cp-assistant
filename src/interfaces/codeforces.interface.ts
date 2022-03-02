@@ -1,5 +1,5 @@
 import type { Snowflake } from "discord.js";
-import CodeforcesProblem from "../entity/problem.codeforces.entity";
+import CodeforcesProblem from "../entity/codeforces/problem.entity";
 
 export interface RandomProblemGenerateConfig {
   minRating: number;

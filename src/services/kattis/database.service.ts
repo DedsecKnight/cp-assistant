@@ -2,8 +2,8 @@ import { ReturnModelType } from "@typegoose/typegoose";
 import { singleton } from "tsyringe";
 import KattisProblem, {
   KattisProblemModel,
-} from "../../entity/problem.kattis.entity";
-import KattisUser, { KattisUserModel } from "../../entity/user.kattis.entity";
+} from "../../entity/kattis/problem.entity";
+import KattisUser, { KattisUserModel } from "../../entity/kattis/user.entity";
 
 @singleton()
 export default class KattisDatabaseService {

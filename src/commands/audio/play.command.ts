@@ -1,6 +1,6 @@
 import { singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
-import MusicSubscription from "../../entity/subscription.entity";
+import MusicSubscription from "../../entity/audio/subscription.entity";
 
 @singleton()
 export default class PlayCommand implements ICommand<MusicSubscription> {

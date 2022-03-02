@@ -1,6 +1,6 @@
 import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import { Embed } from "../../entity/embed.entity";
+import { Embed } from "../../entity/utilities/embed.entity";
 import { ICommand } from "../../interfaces/command.interface";
 import TemplateDatabaseService from "../../services/template/database.service";
 import MessageService from "../../services/utilities/message.service";
