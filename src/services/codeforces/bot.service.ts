@@ -1,6 +1,8 @@
 import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import RandomCommand from "../../commands/codeforces/random.command";
+import SubscribeCommand from "../../commands/codeforces/subscribe.command";
+import UnsubscribeCommand from "../../commands/codeforces/unsubscribe.command";
 import UpdateCommand from "../../commands/codeforces/update.command";
 import { IService } from "../../interfaces/service.interface";
 
@@ -10,8 +12,13 @@ export default class CodeforcesService extends IService<Message> {
   public serviceName: string = "cf";
   public serviceDescription: string = "Codeforces Service";
 
-  constructor(updateCommand: UpdateCommand, randomCommand: RandomCommand) {
-    super(updateCommand, randomCommand);
+  constructor(
+    updateCommand: UpdateCommand,
+    randomCommand: RandomCommand,
+    subscribeCommand: SubscribeCommand,
+    unsubscribeCommand: UnsubscribeCommand
+  ) {
+    super(updateCommand, randomCommand, subscribeCommand, unsubscribeCommand);
   }
 
   public async process(

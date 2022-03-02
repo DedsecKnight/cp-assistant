@@ -29,9 +29,11 @@
     "ffmpeg-static": "^4.4.1",
     "libsodium-wrappers": "^0.7.9",
     "mongoose": "^6.2.1",
+    "node-fetch": "^2.6.7",
     "node-html-parser": "^5.2.0",
     "play-dl": "^1.8.4",
     "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.5.4",
     "tsyringe": "^4.6.0",
     "youtube-dl-exec": "^2.0.2",
     "ytdl-core": "^4.10.0"
