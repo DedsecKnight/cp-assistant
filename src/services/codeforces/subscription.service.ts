@@ -44,6 +44,10 @@ export default class CFSubscriptionService {
     return this.verdictColorMapping[verdict];
   }
 
+  private checkACVerdict(verdict: string) {
+    return verdict === "OK";
+  }
+
   private createSubscription(handle: string) {
     const subscriptionObserver: Observer<UserSubmission> = {
       next: (value) => {
@@ -60,7 +64,15 @@ export default class CFSubscriptionService {
             if (messageObj) {
               return this.messageService.sendEmbedMessage(messageObj, {
                 color: this.getVerdictColor(value.verdict),
-                description: `${handle} just made a submission with verdict ${value.verdict}`,
+                description: `${
+                  this.checkACVerdict(value.verdict) ? "✅" : "❌"
+                } ${handle} just got ${value.verdict} verdict on problem ${
+                  value.problem.contestId
+                }${
+                  value.problem.index
+                }. Check out the problem at: https://codeforces.com/contest/${
+                  value.problem.contestId
+                }/problem/${value.problem.index}`,
               });
             }
           })
@@ -170,6 +182,7 @@ export default class CFSubscriptionService {
 
     if (this.handleToFollower.get(handle)!.length === 0) {
       this.handleToFollower.delete(handle);
+      this.handleToObservers.get(handle)!.unsubscribe();
       this.handleToObservers.delete(handle);
     }
 
