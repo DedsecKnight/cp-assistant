@@ -154,7 +154,7 @@ export default class CFSubscriptionService {
     if (
       !this.userToSubscriber.has(discordId) ||
       !this.handleToFollower.has(handle) ||
-      this.userToSubscriber.get(discordId)!.includes(handle)
+      !this.userToSubscriber.get(discordId)!.includes(handle)
     ) {
       return {
         statusCode: 400,
