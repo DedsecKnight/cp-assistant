@@ -48,6 +48,10 @@ export default class CFSubscriptionService {
     return verdict === "OK";
   }
 
+  public getUserSubscription(discordId: Snowflake): string[] {
+    return this.userToSubscriber.get(discordId) || [];
+  }
+
   private createSubscription(handle: string) {
     const subscriptionObserver: Observer<UserSubmission> = {
       next: (value) => {

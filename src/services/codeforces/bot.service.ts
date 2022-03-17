@@ -2,6 +2,7 @@ import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import RandomCommand from "../../commands/codeforces/random.command";
 import SubscribeCommand from "../../commands/codeforces/subscribe.command";
+import SubscriptionCommand from "../../commands/codeforces/subscription.command";
 import UnsubscribeCommand from "../../commands/codeforces/unsubscribe.command";
 import UpdateCommand from "../../commands/codeforces/update.command";
 import { IService } from "../../interfaces/service.interface";
@@ -16,9 +17,16 @@ export default class CodeforcesService extends IService<Message> {
     updateCommand: UpdateCommand,
     randomCommand: RandomCommand,
     subscribeCommand: SubscribeCommand,
-    unsubscribeCommand: UnsubscribeCommand
+    unsubscribeCommand: UnsubscribeCommand,
+    viewSubscriptionCommand: SubscriptionCommand
   ) {
-    super(updateCommand, randomCommand, subscribeCommand, unsubscribeCommand);
+    super(
+      updateCommand,
+      randomCommand,
+      subscribeCommand,
+      unsubscribeCommand,
+      viewSubscriptionCommand
+    );
   }
 
   public async process(
