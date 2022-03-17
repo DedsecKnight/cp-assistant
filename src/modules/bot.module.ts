@@ -4,6 +4,7 @@ import { IService } from "../interfaces/service.interface";
 import AudioService from "../services/audio/bot.service";
 import CodeforcesService from "../services/codeforces/bot.service";
 import KattisService from "../services/kattis/bot.service";
+import POTWService from "../services/potw/bot.service";
 import TemplateService from "../services/template/bot.service";
 
 @singleton()
@@ -14,7 +15,8 @@ export default class BotModule {
     audioService: AudioService,
     templateService: TemplateService,
     kattisService: KattisService,
-    codeforcesService: CodeforcesService
+    codeforcesService: CodeforcesService,
+    potwService: POTWService
   ) {
     this.serviceMapping = Array.from(arguments).reduce(
       (acc: typeof this.serviceMapping, service: IService) => ({
