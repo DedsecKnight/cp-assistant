@@ -15,14 +15,14 @@ export default class POTWUtilsService {
   ) {
     this.subscribedChannels = [];
 
-    scheduleJob(process.env.POTW_CRON_CONFIG_DEV!, async () => {
+    scheduleJob(process.env.POTW_CRON_CONFIG!, async () => {
       const problem = await this.kattisDatabaseService.generateRandomProblem(
         0,
         6
       );
       const embed: Partial<Embed> = {
         color: "ORANGE",
-        title: "Problem of the Week",
+        title: "Problem of the Week from Kattis",
       };
 
       if (!problem) {
