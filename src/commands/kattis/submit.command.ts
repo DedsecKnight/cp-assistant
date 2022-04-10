@@ -1,11 +1,8 @@
 import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
-import FileService from "../../services/utilities/file.service";
 import KattisUtilsService from "../../services/kattis/utilities.service";
-import KattisUser from "../../entity/kattis/user.entity";
 import MessageService from "../../services/utilities/message.service";
-import { Embed } from "../../entity/utilities/embed.entity";
 
 @singleton()
 @injectable()
@@ -17,82 +14,8 @@ export default class SubmitCommand implements ICommand<Message> {
 
   constructor(
     private kattisUtilsService: KattisUtilsService,
-    private fileService: FileService,
     private messageService: MessageService
   ) {}
-
-  private wait(milliseconds: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        resolve();
-      }, milliseconds);
-    });
-  }
-
-  private async trackSubmissionStatus(
-    userMsg: Message,
-    userData: KattisUser,
-    userSecretKey: string,
-    submissionId: string
-  ) {
-    const embedConfig: Partial<Embed> = {
-      color: "YELLOW",
-      title: "Fetching Submission Data...",
-    };
-
-    const message = await this.messageService.sendEmbedMessage(
-      userMsg.channel,
-      embedConfig
-    );
-
-    const { decryptedPassword } = this.kattisUtilsService.decryptKattisPassword(
-      userData.kattisPassword,
-      userSecretKey
-    );
-
-    const cookieData = await this.kattisUtilsService.generateKattisCookie(
-      userData.kattisUsername,
-      decryptedPassword
-    );
-    while (true) {
-      const {
-        statusId,
-        verdicts,
-        statusCode: responseStatusCode,
-      } = await this.kattisUtilsService.getSubmissionData(
-        cookieData.cookie!,
-        submissionId
-      );
-
-      if (responseStatusCode !== 200) {
-        embedConfig.title = "Error getting data from Kattis.";
-        embedConfig.color = "RED";
-        await this.messageService.editEmbedMessage(message, embedConfig);
-        break;
-      }
-
-      const currentStatus =
-        this.kattisUtilsService.getSubmissionStatusById(statusId);
-      const judgeFinished = this.kattisUtilsService.judgeFinished(statusId);
-
-      embedConfig.title = currentStatus;
-      embedConfig.description = verdicts.join(" ");
-
-      if (currentStatus === "Accepted") {
-        embedConfig.color = "GREEN";
-      } else if (judgeFinished) {
-        embedConfig.color = "RED";
-      }
-
-      await this.messageService.editEmbedMessage(message, embedConfig);
-
-      if (judgeFinished) {
-        break;
-      }
-
-      await this.wait(250);
-    }
-  }
 
   public async execute(
     message: Message<boolean>,
@@ -163,56 +86,11 @@ export default class SubmitCommand implements ICommand<Message> {
       });
     }
 
-    const cookieData = await this.kattisUtilsService.generateKattisCookie(
+    this.kattisUtilsService.processSubmitMesssage(
       userData.kattisUsername,
-      decryptedPassword
+      decryptedPassword,
+      problemId,
+      message
     );
-
-    if (cookieData.statusCode !== 200) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description:
-          "Failed to authenticate with Kattis. Please make sure that your credentials is correct and try again later",
-      });
-    }
-
-    const submissionFile = submissionFiles.first()!;
-    const fileName = submissionFile.name!;
-
-    const fileExtension = this.fileService.getFileExtension(fileName);
-    if (!this.kattisUtilsService.isSupportedExtension(fileExtension)) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description:
-          "Extension is not supported. Please try again with either C++, Java, or Python 3 submission",
-      });
-    }
-
-    const fileData = await this.fileService.extractDiscordAttachmentContent(
-      submissionFile
-    );
-    const filepath = await this.fileService.createFile(
-      message.guildId || "",
-      message.author.id,
-      fileName,
-      fileData
-    );
-
-    const { statusCode, submissionId } =
-      await this.kattisUtilsService.submitSolution(
-        problemId,
-        filepath,
-        cookieData.cookie,
-        fileExtension
-      );
-    if (statusCode >= 400) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "YELLOW",
-        description:
-          "Submission command is not working at the moment. Please try again later",
-      });
-    }
-
-    this.trackSubmissionStatus(message, userData, userSecretKey, submissionId);
   }
 }
