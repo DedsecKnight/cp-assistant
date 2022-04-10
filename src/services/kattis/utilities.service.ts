@@ -8,11 +8,19 @@ import fs from "fs";
 import FormData from "@discordjs/form-data";
 import KattisProblem from "../../entity/kattis/problem.entity";
 import KattisDatabaseService from "./database.service";
+import { Message, TextBasedChannel } from "discord.js";
+import MessageService from "../utilities/message.service";
+import { Embed } from "../../entity/utilities/embed.entity";
+import FileService from "../utilities/file.service";
 
 @singleton()
 @injectable()
 export default class KattisUtilsService {
-  constructor(private databaseService: KattisDatabaseService) {}
+  constructor(
+    private databaseService: KattisDatabaseService,
+    private messageService: MessageService,
+    private fileService: FileService
+  ) {}
   private languageMapping: Record<string, string> = {
     ".cpp": "C++",
     ".java": "Java",
@@ -52,6 +60,64 @@ export default class KattisUtilsService {
     );
 
     return secretKey;
+  }
+
+  public async processSubmitMesssage(
+    kattisUsername: string,
+    kattisPassword: string,
+    problemId: string,
+    message: Message,
+    onJudgeFinished?: ((currentStatus: string) => Promise<void>) | undefined
+  ) {
+    const cookieData = await this.generateKattisCookie(
+      kattisUsername,
+      kattisPassword
+    );
+    const submissionFile = message.attachments.first()!;
+    const fileName = submissionFile.name!;
+
+    const fileExtension = this.fileService.getFileExtension(fileName);
+    if (!this.isSupportedExtension(fileExtension)) {
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "RED",
+        description:
+          "Extension is not supported. Please try again with either C++, Java, or Python 3 submission",
+      });
+    }
+
+    const fileData = await this.fileService.extractDiscordAttachmentContent(
+      submissionFile
+    );
+    const filepath = await this.fileService.createFile(
+      message.guildId || "",
+      message.author.id,
+      fileName,
+      fileData
+    );
+
+    const { statusCode: submitSolutionStatusCode, submissionId } =
+      await this.submitSolution(
+        problemId,
+        filepath,
+        cookieData.cookie,
+        fileExtension
+      );
+
+    if (submitSolutionStatusCode >= 400) {
+      return this.messageService.sendEmbedMessage(message.channel, {
+        color: "YELLOW",
+        description:
+          "Submission command is not working at the moment. Please try again later",
+      });
+    }
+
+    this.trackSubmissionStatus(
+      message.channel,
+      kattisUsername,
+      kattisPassword,
+      submissionId,
+      onJudgeFinished
+    );
   }
 
   public async getSubmissionData(
@@ -206,6 +272,78 @@ export default class KattisUtilsService {
         statusCode: error.response.status,
         cookie: "",
       };
+    }
+  }
+
+  private wait(milliseconds: number): Promise<void> {
+    return new Promise((resolve, _) => {
+      setTimeout(() => {
+        resolve();
+      }, milliseconds);
+    });
+  }
+
+  public async trackSubmissionStatus(
+    channel: TextBasedChannel,
+    kattisUsername: string,
+    kattisPassword: string,
+    submissionId: string,
+    onJudgeFinished?: ((currentStatus: string) => Promise<void>) | undefined
+  ) {
+    const embedConfig: Partial<Embed> = {
+      color: "YELLOW",
+      title: "Fetching Submission Data...",
+    };
+
+    const submissionStatusMessage = await this.messageService.sendEmbedMessage(
+      channel,
+      embedConfig
+    );
+
+    const cookieData = await this.generateKattisCookie(
+      kattisUsername,
+      kattisPassword
+    );
+    while (true) {
+      const {
+        statusId,
+        verdicts,
+        statusCode: responseStatusCode,
+      } = await this.getSubmissionData(cookieData.cookie!, submissionId);
+
+      if (responseStatusCode !== 200) {
+        embedConfig.title = "Error getting data from Kattis.";
+        embedConfig.color = "RED";
+        await this.messageService.editEmbedMessage(
+          submissionStatusMessage,
+          embedConfig
+        );
+        break;
+      }
+
+      const currentStatus = this.getSubmissionStatusById(statusId);
+      const judgeFinished = this.judgeFinished(statusId);
+
+      embedConfig.title = currentStatus;
+      embedConfig.description = verdicts.join(" ");
+
+      if (currentStatus === "Accepted") {
+        embedConfig.color = "GREEN";
+      } else if (judgeFinished) {
+        embedConfig.color = "RED";
+      }
+
+      await this.messageService.editEmbedMessage(
+        submissionStatusMessage,
+        embedConfig
+      );
+
+      if (judgeFinished) {
+        if (onJudgeFinished) await onJudgeFinished(currentStatus);
+        break;
+      }
+
+      await this.wait(250);
     }
   }
 
