@@ -6,6 +6,7 @@ import { POTWSubscriberChannel } from "../../entity/potw/subscriber.entity";
 import KattisDatabaseService from "../kattis/database.service";
 import KattisUtilsService from "../kattis/utilities.service";
 import MessageService from "../utilities/message.service";
+import POTWDatabaseService from "./database.service";
 
 @injectable()
 @singleton()
@@ -15,7 +16,8 @@ export default class POTWUtilsService {
   constructor(
     private kattisDatabaseService: KattisDatabaseService,
     private kattisUtilsService: KattisUtilsService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private potwDatabaseService: POTWDatabaseService
   ) {
     this.subscribedChannels = [];
 
@@ -67,6 +69,18 @@ export default class POTWUtilsService {
             },
           });
           collector.on("collect", async (message) => {
+            const channelEntry = await this.potwDatabaseService.fetchChannel(
+              message.channel.id
+            );
+            if (channelEntry!.mostRecentWinner === message.author.id) {
+              await this.messageService.sendEmbedMessage(message.channel, {
+                title: "Invalid submission",
+                description:
+                  "You are not eligible to participate in this week's POTW due to cooldown",
+                color: "RED",
+              });
+              return;
+            }
             await this.kattisUtilsService.processSubmitMesssage(
               process.env.KATTIS_SERVICE_USERNAME!,
               process.env.KATTIS_SERVICE_PASSWORD!,
@@ -75,6 +89,10 @@ export default class POTWUtilsService {
               async (currentStatus) => {
                 if (currentStatus === "Accepted") {
                   subscriber.destroyCollector();
+                  await this.potwDatabaseService.updateWinner(
+                    channelEntry!.channelId,
+                    message.author.id
+                  );
                   await this.messageService.sendEmbedMessage(
                     subscriber.getChannel(),
                     {

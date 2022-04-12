@@ -1,6 +1,7 @@
 import { Message } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { ICommand } from "../../interfaces/command.interface";
+import POTWDatabaseService from "../../services/potw/database.service";
 import POTWUtilsService from "../../services/potw/utilities.service";
 import MessageService from "../../services/utilities/message.service";
 
@@ -14,7 +15,8 @@ export default class UnregisterChannelCommand implements ICommand<Message> {
 
   constructor(
     private utilsService: POTWUtilsService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private databaseService: POTWDatabaseService
   ) {}
 
   public async execute(
@@ -22,6 +24,7 @@ export default class UnregisterChannelCommand implements ICommand<Message> {
     args: string[]
   ): Promise<any> {
     this.utilsService.unsubscribeChannel(message.channel);
+    await this.databaseService.removeChannel(message.channel.id);
     return this.messageService.sendEmbedMessage(message.channel, {
       title: "Channel unregistered",
       description:

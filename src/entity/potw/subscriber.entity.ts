@@ -1,3 +1,4 @@
+import { getModelForClass, prop } from "@typegoose/typegoose";
 import type { MessageCollector, TextBasedChannel } from "discord.js";
 
 export class POTWSubscriberChannel {
@@ -29,4 +30,17 @@ export class POTWSubscriberChannel {
     this.collector.stop();
     this.collector = null;
   }
+
+  @prop({ type: () => String, required: true })
+  channelId: string;
+
+  @prop({ type: () => String, default: "" })
+  mostRecentWinner: string;
+
+  @prop({ type: () => String, default: "" })
+  potwProposal: string;
 }
+
+export const POTWSubscriberChannelModel = getModelForClass(
+  POTWSubscriberChannel
+);
