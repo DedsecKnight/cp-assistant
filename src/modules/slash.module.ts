@@ -2,8 +2,8 @@ import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v9";
 import { CommandInteraction, MessageEmbed } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import TestSlashService from "../services/test/bot.service";
 import { SlashService } from "../interfaces/slash.service.interface";
+import POTWService from "../services/potw/bot.service";
 
 @injectable()
 @singleton()
@@ -12,7 +12,7 @@ export default class SlashCommandModule {
   private commands: any[] = [];
   private serviceMapping: Record<string, SlashService>;
 
-  constructor(testService: TestSlashService) {
+  constructor(potwService: POTWService) {
     this.discordRest = new REST({ version: "9" }).setToken(
       process.env.DISCORD_TOKEN!
     );
@@ -26,7 +26,6 @@ export default class SlashCommandModule {
       },
       {} as typeof this.serviceMapping
     );
-    console.log(this.commands);
   }
   public async initializeSlashCommands(clientId: string) {
     await this.discordRest.put(Routes.applicationCommands(clientId), {
