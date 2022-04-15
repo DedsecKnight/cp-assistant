@@ -9,7 +9,7 @@ import TemplateService from "../services/template/bot.service";
 
 @singleton()
 @injectable()
-export default class BotModule {
+export default class TextCommandModule {
   private serviceMapping: Record<string, IService>;
   constructor(
     audioService: AudioService,
