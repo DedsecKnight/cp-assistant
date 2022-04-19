@@ -28,9 +28,16 @@ export default class SlashCommandModule {
     );
   }
   public async initializeSlashCommands(clientId: string) {
-    await this.discordRest.put(Routes.applicationCommands(clientId), {
-      body: this.commands,
-    });
+    if (process.env.NODE_ENV === "production") {
+      await this.discordRest.put(Routes.applicationCommands(clientId), {
+        body: this.commands,
+      });
+    } else {
+      await this.discordRest.put(
+        Routes.applicationGuildCommands(clientId, process.env.DEV_GUILD_ID!),
+        { body: this.commands }
+      );
+    }
   }
   public async processSlashCommand(interaction: CommandInteraction) {
     if (!this.serviceMapping.hasOwnProperty(interaction.commandName)) {
