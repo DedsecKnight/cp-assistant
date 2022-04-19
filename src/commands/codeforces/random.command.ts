@@ -1,77 +1,98 @@
-import { Message } from "discord.js";
+import { CommandInteraction, CacheType, MessageEmbedOptions } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import { ICommand } from "../../interfaces/command.interface";
+import {
+  ISlashCommand,
+  SlashCommandParam,
+} from "../../interfaces/slash.command.interface";
 import CodeforcesUtilsService from "../../services/codeforces/utilities.service";
-import MessageService from "../../services/utilities/message.service";
 
 @singleton()
 @injectable()
-export default class RandomCommand implements ICommand<Message> {
+export default class RandomCommand implements ISlashCommand {
   public commandName: string = "random";
   public commandDescription: string =
     "Use this command to generate a random command based on provided specification";
-  public commandParams: string[] = ["min_rating", "max_rating", "topic"];
+  public commandParams: SlashCommandParam[] = [
+    {
+      paramName: "min_rating",
+      paramDescription: "Lower bound for problem rating",
+      paramRequired: false,
+    },
+    {
+      paramName: "max_rating",
+      paramDescription: "Upper bound for problem rating",
+      paramRequired: false,
+    },
+    {
+      paramName: "topic",
+      paramDescription: "Problem Topic",
+      paramRequired: false,
+    },
+  ];
 
-  constructor(
-    private utilsService: CodeforcesUtilsService,
-    private messageService: MessageService
-  ) {}
+  constructor(private cfUtilsService: CodeforcesUtilsService) {}
 
   public async execute(
-    message: Message<boolean>,
-    args: string[]
+    interaction: CommandInteraction<CacheType>
   ): Promise<any> {
-    if (args.length !== 5) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description: "5 arguments is required",
-      });
-    }
+    const minRating = interaction.options.getString("min_rating")
+      ? parseInt(interaction.options.getString("min_rating")!)
+      : 800;
+    const maxRating = interaction.options.getString("max_rating")
+      ? parseInt(interaction.options.getString("max_rating")!)
+      : 4000;
+    const topic = interaction.options.getString("topic") || "";
 
-    const minRating = parseInt(args[2]);
-    const maxRating = parseInt(args[3]);
+    const embedConfig: MessageEmbedOptions = {};
 
     if (isNaN(minRating) || isNaN(maxRating) || minRating > maxRating) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description: "Invalid rating configuration. Please try again.",
-      });
+      embedConfig.color = "RED";
+      embedConfig.description =
+        "Invalid rating configuration. Please try again.";
+      return interaction.reply({ embeds: [embedConfig] });
     }
 
     try {
-      const problem = await this.utilsService.generateRandomProblem({
+      const problem = await this.cfUtilsService.generateRandomProblem({
         minRating,
         maxRating,
-        topic: args[4],
+        topic,
       });
       if (!problem) {
-        return this.messageService.sendEmbedMessage(message.channel, {
-          color: "RED",
-          description:
-            "No such problem found. Please adjust the difficulty range",
-        });
+        embedConfig.color = "RED";
+        embedConfig.description =
+          "No such problem found. Please adjust the difficulty range";
+        return interaction.reply({ embeds: [embedConfig] });
       }
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "BLUE",
-        title: "Random Problem",
-        fields: [
-          { name: "Problem Name", value: problem.name, inline: true },
+      return interaction.reply({
+        embeds: [
           {
-            name: "Problem Difficulty",
-            value: problem.rating.toString(),
-            inline: true,
-          },
-          {
-            name: "Problem URL",
-            value: `https://codeforces.com/problemset/problem/${problem.contestId}/${problem.index}`,
+            color: "BLUE",
+            title: "Random Problem",
+            fields: [
+              { name: "Problem Name", value: problem.name, inline: true },
+              {
+                name: "Problem Difficulty",
+                value: problem.rating.toString(),
+                inline: true,
+              },
+              {
+                name: "Problem URL",
+                value: `https://codeforces.com/problemset/problem/${problem.contestId}/${problem.index}`,
+              },
+            ],
           },
         ],
       });
     } catch (error) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description:
-          "Service is unavailable at the moment. Please try again later",
+      return interaction.reply({
+        embeds: [
+          {
+            color: "RED",
+            description:
+              "Service is unavailable at the moment. Please try again later",
+          },
+        ],
       });
     }
   }

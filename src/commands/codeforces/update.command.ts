@@ -1,35 +1,31 @@
-import { Message } from "discord.js";
+import { CommandInteraction, CacheType, MessageEmbedOptions } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import { Embed } from "../../entity/utilities/embed.entity";
-import { ICommand } from "../../interfaces/command.interface";
+import {
+  ISlashCommand,
+  SlashCommandParam,
+} from "../../interfaces/slash.command.interface";
 import CodeforcesUtilsService from "../../services/codeforces/utilities.service";
-import MessageService from "../../services/utilities/message.service";
 
 @injectable()
 @singleton()
-export default class UpdateCommand implements ICommand<Message> {
+export default class UpdateCommand implements ISlashCommand {
   public commandName: string = "update";
   public commandDescription: string =
     "Use this command to update the problem database";
-  public commandParams: string[] = [];
+  public commandParams: SlashCommandParam[] = [];
 
-  constructor(
-    private messageService: MessageService,
-    private cfUtilsService: CodeforcesUtilsService
-  ) {}
+  constructor(private cfUtilsService: CodeforcesUtilsService) {}
 
   public async execute(
-    message: Message<boolean>,
-    args: string[]
+    interaction: CommandInteraction<CacheType>
   ): Promise<any> {
-    const embedConfig: Partial<Embed> = {
+    const embedConfig: MessageEmbedOptions = {
       color: "YELLOW",
       title: "Updating problem database",
     };
-    const replyMessage = await this.messageService.sendEmbedMessage(
-      message.channel,
-      embedConfig
-    );
+
+    await interaction.reply({ embeds: [embedConfig] });
+
     const { statusCode } = await this.cfUtilsService.updateProblemDatabase();
     if (statusCode !== 200) {
       embedConfig.color = "RED";
@@ -38,6 +34,6 @@ export default class UpdateCommand implements ICommand<Message> {
       embedConfig.color = "GREEN";
       embedConfig.title = "Problem Database updated";
     }
-    return this.messageService.editEmbedMessage(replyMessage, embedConfig);
+    return interaction.editReply({ embeds: [embedConfig] });
   }
 }

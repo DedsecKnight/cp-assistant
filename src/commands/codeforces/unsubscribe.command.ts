@@ -1,35 +1,28 @@
-import { Message } from "discord.js";
+import { CommandInteraction, CacheType } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import { ICommand } from "../../interfaces/command.interface";
+import {
+  ISlashCommand,
+  SlashCommandParam,
+} from "../../interfaces/slash.command.interface";
 import CFSubscriptionService from "../../services/codeforces/subscription.service";
-import MessageService from "../../services/utilities/message.service";
 
-@singleton()
 @injectable()
-export default class UnsubscribeCommand implements ICommand<Message> {
+@singleton()
+export default class UnsubscribeCommand implements ISlashCommand {
   public commandName: string = "unsubscribe";
   public commandDescription: string =
     "Use this command to unsubscribe from a handle";
-  public commandParams: string[] = ["handle"];
+  public commandParams: SlashCommandParam[] = [
+    { paramName: "handle", paramDescription: "CF Handle", paramRequired: true },
+  ];
 
-  constructor(
-    private messageService: MessageService,
-    private subscriptionService: CFSubscriptionService
-  ) {}
+  constructor(private subscriptionService: CFSubscriptionService) {}
 
   public async execute(
-    message: Message<boolean>,
-    args: string[]
+    interaction: CommandInteraction<CacheType>
   ): Promise<any> {
-    if (args.length !== 3) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description: "Handle is required. Please try again",
-      });
-    }
-
-    const discordId = message.author.id;
-    const handle = args[2];
+    const discordId = interaction.user.id;
+    const handle = interaction.options.getString("handle")!;
 
     const { statusCode, msg } = this.subscriptionService.unsubscribe({
       discordId,
@@ -37,16 +30,26 @@ export default class UnsubscribeCommand implements ICommand<Message> {
     });
 
     if (statusCode !== 200) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "YELLOW",
-        description: msg,
+      return interaction.reply({
+        embeds: [
+          {
+            color: "YELLOW",
+            description: msg,
+          },
+        ],
+        ephemeral: true,
       });
     }
 
-    return this.messageService.sendEmbedMessage(message.channel, {
-      color: "GREEN",
-      title: "Unsubscription sucessful",
-      description: `<@${message.author.id}> has unsubscribed to ${handle}`,
+    return interaction.reply({
+      embeds: [
+        {
+          color: "GREEN",
+          title: "Unsubscription sucessful",
+          description: `${interaction.user.toString()} has unsubscribed to ${handle}`,
+        },
+      ],
+      ephemeral: true,
     });
   }
 }

@@ -1,53 +1,59 @@
-import { Message } from "discord.js";
-import { singleton, injectable } from "tsyringe";
-import { ICommand } from "../../interfaces/command.interface";
-import CFSubscriptionService from "../../services/codeforces/subscription.service";
-import MessageService from "../../services/utilities/message.service";
+import { CommandInteraction, CacheType } from "discord.js";
+import { injectable, singleton } from "tsyringe";
+import {
+  ISlashCommand,
+  SlashCommandParam,
+} from "../../../interfaces/slash.command.interface";
+import CFSubscriptionService from "../../../services/codeforces/subscription.service";
 
-@singleton()
 @injectable()
-export default class SubscribeCommand implements ICommand<Message> {
+@singleton()
+export default class SubscribeCommand implements ISlashCommand {
   public commandName: string = "subscribe";
   public commandDescription: string =
-    "Use this command to subscribe to a Codeforces handle. You can keep track of their submissions through this command.";
-  public commandParams: string[] = ["handle"];
+    "Subscribe to a Codeforces handle to keep track of their submissions.";
+  public commandParams: SlashCommandParam[] = [
+    {
+      paramName: "handle",
+      paramDescription: "Subscribee's CF Handle",
+      paramRequired: true,
+    },
+  ];
 
-  constructor(
-    private messageService: MessageService,
-    private subscriptionService: CFSubscriptionService
-  ) {}
-
+  constructor(private subscriptionService: CFSubscriptionService) {}
   public async execute(
-    message: Message<boolean>,
-    args: string[]
+    interaction: CommandInteraction<CacheType>
   ): Promise<any> {
-    if (args.length !== 3) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description: "Handle is required. Please try again",
-      });
-    }
-
-    const discordId = message.author.id;
-    const handle = args[2];
+    const discordId = interaction.user.id;
+    const handle = interaction.options.getString("handle")!;
 
     const { statusCode, msg } = this.subscriptionService.subscribe({
       discordId,
       handle,
-      channelObj: message.channel,
+      channelObj: interaction.user.dmChannel!,
     });
 
     if (statusCode !== 200) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "YELLOW",
-        description: msg,
+      return interaction.reply({
+        embeds: [
+          {
+            color: "YELLOW",
+            description: msg,
+          },
+        ],
+        ephemeral: true,
       });
     }
 
-    return this.messageService.sendEmbedMessage(message.channel, {
-      color: "GREEN",
-      title: "Subscription sucessful",
-      description: `<@${message.author.id}> has subscribed to ${handle}`,
+    return interaction.reply({
+      embeds: [
+        {
+          color: "GREEN",
+          title: "Subscription successful",
+          description: `${interaction.user.toString()} has subscribed to ${handle}`,
+        },
+      ],
+      ephemeral: true,
     });
   }
 }
