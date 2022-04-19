@@ -32,13 +32,17 @@ export default class CodeforcesDatabaseService {
     maxRating,
     topic,
   }: RandomProblemGenerateConfig) {
-    const problems = await this.codeforcesProblemModel.find({
+    let filter: any = {
       rating: {
         $gte: minRating,
         $lte: maxRating,
       },
-      tags: topic,
-    });
+    };
+
+    if (topic !== "") {
+      filter = { ...filter, tags: topic };
+    }
+    const problems = await this.codeforcesProblemModel.find(filter);
 
     if (problems.length === 0) {
       return null;
