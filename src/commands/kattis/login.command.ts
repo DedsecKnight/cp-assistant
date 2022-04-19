@@ -1,54 +1,52 @@
-import { Message } from "discord.js";
+import { CommandInteraction, CacheType, MessageEmbed } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import { ICommand } from "../../interfaces/command.interface";
+import {
+  ISlashCommand,
+  SlashCommandParam,
+} from "../../interfaces/slash.command.interface";
 import KattisUtilsService from "../../services/kattis/utilities.service";
-import MessageService from "../../services/utilities/message.service";
+import { spoiler } from "@discordjs/builders";
 
 @singleton()
 @injectable()
-export default class LoginCommand implements ICommand<Message> {
+export default class LoginCommand implements ISlashCommand {
   public commandName: string = "login";
   public commandDescription: string =
     "Use this command to login into Kattis. Please use this command through DM.";
-  public commandParams: string[] = ["username", "password"];
+  public commandParams: SlashCommandParam[] = [
+    {
+      paramName: "username",
+      paramDescription: "Kattis Username",
+      paramRequired: true,
+    },
+    {
+      paramName: "password",
+      paramDescription: "Kattis Password",
+      paramRequired: true,
+    },
+  ];
 
-  constructor(
-    private kattisUtilsService: KattisUtilsService,
-    private messageService: MessageService
-  ) {}
+  constructor(private kattisUtilsService: KattisUtilsService) {}
 
   public async execute(
-    message: Message<boolean>,
-    args: string[]
+    interaction: CommandInteraction<CacheType>
   ): Promise<any> {
-    if (message.channel.type !== "DM") {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "YELLOW",
-        description: "Please use this command in DM",
-      });
-    }
-    if (args.length < 4) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description: "Username and password is required to login",
-      });
-    }
-    const user = args[2];
-    const password = args[3];
+    const username = interaction.options.getString("username");
+    const password = interaction.options.getString("password");
 
     try {
       const secretKey = await this.kattisUtilsService.updateUserCredentials(
-        message.author.id,
-        user,
-        password
+        interaction.member!.user.id,
+        username!,
+        password!
       );
 
-      return this.messageService.sendEmbedMessage(message.channel, {
+      const successEmbed = new MessageEmbed({
         color: "GREEN",
         fields: [
           {
             name: "Click below to reveal your secret key",
-            value: `\|\|\`${secretKey}\`\|\|`,
+            value: spoiler(secretKey),
           },
           {
             name: "Note",
@@ -56,12 +54,18 @@ export default class LoginCommand implements ICommand<Message> {
           },
         ],
       });
+
+      return interaction.reply({
+        embeds: [successEmbed],
+        ephemeral: true,
+      });
     } catch (error) {
       console.error(error);
-      return this.messageService.sendEmbedMessage(message.channel, {
+      const errorEmbed = new MessageEmbed({
         color: "RED",
         description: "Login failed",
       });
+      return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
     }
   }
 }

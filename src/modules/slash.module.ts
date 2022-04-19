@@ -3,6 +3,7 @@ import { Routes } from "discord-api-types/v9";
 import { CommandInteraction, MessageEmbed } from "discord.js";
 import { injectable, singleton } from "tsyringe";
 import { SlashService } from "../interfaces/slash.service.interface";
+import KattisService from "../services/kattis/bot.service";
 import POTWService from "../services/potw/bot.service";
 
 @injectable()
@@ -12,7 +13,7 @@ export default class SlashCommandModule {
   private commands: any[] = [];
   private serviceMapping: Record<string, SlashService>;
 
-  constructor(potwService: POTWService) {
+  constructor(potwService: POTWService, kattisService: KattisService) {
     this.discordRest = new REST({ version: "9" }).setToken(
       process.env.DISCORD_TOKEN!
     );
