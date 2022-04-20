@@ -6,6 +6,7 @@ import { SlashService } from "../interfaces/slash.service.interface";
 import CodeforcesService from "../services/codeforces/bot.service";
 import KattisService from "../services/kattis/bot.service";
 import POTWService from "../services/potw/bot.service";
+import TemplateService from "../services/template/bot.slash.service";
 
 @injectable()
 @singleton()
@@ -17,7 +18,8 @@ export default class SlashCommandModule {
   constructor(
     potwService: POTWService,
     kattisService: KattisService,
-    codeforcesService: CodeforcesService
+    codeforcesService: CodeforcesService,
+    templateService: TemplateService
   ) {
     this.discordRest = new REST({ version: "9" }).setToken(
       process.env.DISCORD_TOKEN!

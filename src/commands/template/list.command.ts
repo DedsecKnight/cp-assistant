@@ -1,50 +1,45 @@
-import { Message } from "discord.js";
+import { CommandInteraction, CacheType, MessageEmbedOptions } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import { Embed } from "../../entity/utilities/embed.entity";
-import { ICommand } from "../../interfaces/command.interface";
+import {
+  ISlashCommand,
+  SlashCommandParam,
+} from "../../interfaces/slash.command.interface";
 import TemplateDatabaseService from "../../services/template/database.service";
-import MessageService from "../../services/utilities/message.service";
 
 @singleton()
 @injectable()
-export default class ListTemplateCommand implements ICommand<Message> {
+export default class ListTemplateCommand implements ISlashCommand {
   public commandName: string = "list";
   public commandDescription: string = "List all templates that user has";
-  public commandParams: string[] = [];
+  public commandParams: SlashCommandParam[] = [];
 
-  constructor(
-    private databaseService: TemplateDatabaseService,
-    private messageService: MessageService
-  ) {}
+  constructor(private databaseService: TemplateDatabaseService) {}
 
-  public async execute(message: Message<boolean>, args: string[]) {
-    const guildId = message.member!.guild.id;
-    const userId = message.member!.user.id;
-    const channel = message.channel;
+  public async execute(
+    interaction: CommandInteraction<CacheType>
+  ): Promise<any> {
+    const guildId = interaction.guild ? interaction.guild.id : "";
+    const userId = interaction.user.id;
 
     const templates = await this.databaseService.getTemplatesByUser(
       userId,
       guildId
     );
 
-    const embedConfig: Partial<Embed> = {
+    const embedConfig: MessageEmbedOptions = {
       color: "#0099ff",
-      title: `${message.author.username}#${message.author.discriminator}'s template repository`,
+      title: `${interaction.user.toString()}'s template repository`,
     };
 
     if (templates.length === 0) {
       embedConfig.description = "No template found";
     }
 
-    embedConfig.fields = [];
+    embedConfig.fields = templates.map((template, idx) => ({
+      name: `Template #${idx + 1}`,
+      value: template.fileName,
+    }));
 
-    templates.forEach((template, idx) => {
-      embedConfig.fields!.push({
-        name: `Template #${idx + 1}`,
-        value: template.fileName,
-      });
-    });
-
-    return this.messageService.sendEmbedMessage(message.channel, embedConfig);
+    return interaction.reply({ embeds: [embedConfig] });
   }
 }

@@ -1,35 +1,37 @@
-import { Message } from "discord.js";
+import { CommandInteraction, CacheType } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import { ICommand } from "../../interfaces/command.interface";
+import {
+  ISlashCommand,
+  SlashCommandParam,
+} from "../../interfaces/slash.command.interface";
+import TemplateDatabaseService from "../../services/template/database.service";
 import FileService from "../../services/utilities/file.service";
 import fs from "fs";
-import MessageService from "../../services/utilities/message.service";
-import TemplateDatabaseService from "../../services/template/database.service";
 
-@singleton()
 @injectable()
-export default class GetTemplateCommand implements ICommand<Message> {
+@singleton()
+export default class GetTemplateCommand implements ISlashCommand {
   public commandName: string = "get";
   public commandDescription: string = "Get a template by filename";
-  public commandParams: string[] = ["filename"];
+  public commandParams: SlashCommandParam[] = [
+    {
+      paramName: "filename",
+      paramDescription: "Name of template file",
+      paramRequired: true,
+    },
+  ];
 
   constructor(
     private databaseService: TemplateDatabaseService,
-    private fileService: FileService,
-    private messageService: MessageService
+    private fileService: FileService
   ) {}
 
-  public async execute(message: Message, args: string[]) {
-    if (args.length < 2) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description: "A filename is required. Please try again",
-      });
-    }
-
-    const userId = message.member!.user.id;
-    const guildId = message.member!.guild.id;
-    const fileName = args[2];
+  public async execute(
+    interaction: CommandInteraction<CacheType>
+  ): Promise<any> {
+    const userId = interaction.user.id;
+    const guildId = interaction.guild ? interaction.guild.id : "";
+    const fileName = interaction.options.getString("filename")!;
     const template = await this.databaseService.getUserTemplate(
       userId,
       guildId,
@@ -37,10 +39,14 @@ export default class GetTemplateCommand implements ICommand<Message> {
     );
 
     if (!template) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description:
-          "Cannot find requested template. Please check your filename",
+      return interaction.reply({
+        embeds: [
+          {
+            color: "RED",
+            description:
+              "Cannot find requested template. Please check your filename",
+          },
+        ],
       });
     }
 
@@ -50,7 +56,7 @@ export default class GetTemplateCommand implements ICommand<Message> {
       fileName,
       template.templateData
     );
-    await message.channel.send({
+    await interaction.reply({
       files: [filePath],
     });
 
