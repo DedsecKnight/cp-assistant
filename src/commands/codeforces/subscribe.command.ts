@@ -3,8 +3,8 @@ import { injectable, singleton } from "tsyringe";
 import {
   ISlashCommand,
   SlashCommandParam,
-} from "../../../interfaces/slash.command.interface";
-import CFSubscriptionService from "../../../services/codeforces/subscription.service";
+} from "../../interfaces/slash.command.interface";
+import CFSubscriptionService from "../../services/codeforces/subscription.service";
 
 @injectable()
 @singleton()
