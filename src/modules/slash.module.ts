@@ -6,7 +6,7 @@ import { SlashService } from "../interfaces/slash.service.interface";
 import CodeforcesService from "../services/codeforces/bot.service";
 import KattisService from "../services/kattis/bot.service";
 import POTWService from "../services/potw/bot.service";
-import TemplateService from "../services/template/bot.slash.service";
+import TemplateService from "../services/template/bot.service";
 
 @injectable()
 @singleton()

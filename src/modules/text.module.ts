@@ -2,13 +2,12 @@ import { Message, MessageEmbed } from "discord.js";
 import { singleton, injectable } from "tsyringe";
 import { IService } from "../interfaces/service.interface";
 import AudioService from "../services/audio/bot.service";
-import TemplateService from "../services/template/bot.service";
 
 @singleton()
 @injectable()
 export default class TextCommandModule {
   private serviceMapping: Record<string, IService>;
-  constructor(audioService: AudioService, templateService: TemplateService) {
+  constructor(audioService: AudioService) {
     this.serviceMapping = Array.from(arguments).reduce(
       (acc: typeof this.serviceMapping, service: IService) => ({
         ...acc,
