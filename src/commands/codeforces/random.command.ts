@@ -17,11 +17,13 @@ export default class RandomCommand implements ISlashCommand {
       paramName: "min_rating",
       paramDescription: "Lower bound for problem rating",
       paramRequired: false,
+      paramType: "INTEGER",
     },
     {
       paramName: "max_rating",
       paramDescription: "Upper bound for problem rating",
       paramRequired: false,
+      paramType: "INTEGER",
     },
     {
       paramName: "topic",
@@ -35,17 +37,13 @@ export default class RandomCommand implements ISlashCommand {
   public async execute(
     interaction: CommandInteraction<CacheType>
   ): Promise<any> {
-    const minRating = interaction.options.getString("min_rating")
-      ? parseInt(interaction.options.getString("min_rating")!)
-      : 800;
-    const maxRating = interaction.options.getString("max_rating")
-      ? parseInt(interaction.options.getString("max_rating")!)
-      : 4000;
+    const minRating = interaction.options.getInteger("min_rating") || 800;
+    const maxRating = interaction.options.getInteger("max_rating") || 4000;
     const topic = interaction.options.getString("topic") || "";
 
     const embedConfig: MessageEmbedOptions = {};
 
-    if (isNaN(minRating) || isNaN(maxRating) || minRating > maxRating) {
+    if (minRating > maxRating) {
       embedConfig.color = "RED";
       embedConfig.description =
         "Invalid rating configuration. Please try again.";

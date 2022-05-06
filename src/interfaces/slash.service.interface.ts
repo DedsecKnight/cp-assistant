@@ -26,13 +26,18 @@ export abstract class SlashService {
             .setDescription(command.commandDescription);
 
           command.commandParams.forEach(
-            ({ paramName, paramDescription, paramRequired }) => {
-              ret.addStringOption((option) =>
+            ({ paramName, paramDescription, paramRequired, paramType }) => {
+              const optionFunc = (option: any) =>
                 option
                   .setName(paramName)
                   .setDescription(paramDescription)
-                  .setRequired(paramRequired)
-              );
+                  .setRequired(paramRequired);
+              if (paramType === "BOOLEAN") ret.addBooleanOption(optionFunc);
+              else if (paramType === "INTEGER")
+                ret.addIntegerOption(optionFunc);
+              else if (paramType === "NUMBER") ret.addNumberOption(optionFunc);
+              else if (paramType === "USER") ret.addUserOption(optionFunc);
+              else ret.addStringOption(optionFunc);
             }
           );
           return ret;

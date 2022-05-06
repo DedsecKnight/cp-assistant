@@ -17,11 +17,13 @@ export default class RandomCommand implements ISlashCommand {
       paramName: "lower_bound",
       paramDescription: "Lower bound for difficulty",
       paramRequired: false,
+      paramType: "NUMBER",
     },
     {
       paramName: "upper_bound",
       paramDescription: "Upper bound for difficulty",
       paramRequired: false,
+      paramType: "NUMBER",
     },
   ];
 
@@ -30,16 +32,12 @@ export default class RandomCommand implements ISlashCommand {
   public async execute(
     interaction: CommandInteraction<CacheType>
   ): Promise<any> {
-    const lowBound = interaction.options.getString("lower_bound")
-      ? parseFloat(interaction.options.getString("lower_bound")!)
-      : 0.0;
-    const highBound = interaction.options.getString("upper_bound")
-      ? parseFloat(interaction.options.getString("upper_bound")!)
-      : 10.0;
+    const lowBound = interaction.options.getNumber("lower_bound") || 0.0;
+    const highBound = interaction.options.getNumber("upper_bound") || 10.0;
 
     const embedConfig: MessageEmbedOptions = {};
 
-    if (isNaN(lowBound) || isNaN(highBound) || lowBound > highBound) {
+    if (lowBound > highBound) {
       embedConfig.color = "RED";
       embedConfig.description =
         "Invalid value for difficulty bound(s). Please try again.";

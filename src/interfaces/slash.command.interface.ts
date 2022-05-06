@@ -4,6 +4,7 @@ export interface SlashCommandParam {
   paramName: string;
   paramDescription: string;
   paramRequired: boolean;
+  paramType?: "INTEGER" | "NUMBER" | "STRING" | "BOOLEAN" | "USER";
 }
 
 export interface ISlashCommand {
