@@ -1,42 +1,38 @@
-import { Message } from "discord.js";
+import { CommandInteraction, CacheType } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import LoginKattisCommand from "../../commands/kattis/login.command";
-import ParseKattisContestCommand from "../../commands/kattis/parse.command";
-import RandomKattisCommand from "../../commands/kattis/random.command";
-import SubmitKattisCommand from "../../commands/kattis/submit.command";
-import UpdateKattisCommand from "../../commands/kattis/update.command";
-import { IService } from "../../interfaces/service.interface";
+import LoginCommand from "../../commands/kattis/login.command";
+import ParseContestCommand from "../../commands/kattis/parse.command";
+import RandomCommand from "../../commands/kattis/random.command";
+import SubmitCommand from "../../commands/kattis/submit.command";
+import UpdateCommand from "../../commands/kattis/update.command";
+import { ISlashCommand } from "../../interfaces/slash.command.interface";
+import { SlashService } from "../../interfaces/slash.service.interface";
 
-@singleton()
 @injectable()
-export default class KattisService extends IService<Message> {
+@singleton()
+export default class KattisService extends SlashService {
   public serviceName: string = "kattis";
   public serviceDescription: string = "Kattis Service";
 
   constructor(
-    parseCommand: ParseKattisContestCommand,
-    loginCommand: LoginKattisCommand,
-    submitCommand: SubmitKattisCommand,
-    updateCommand: UpdateKattisCommand,
-    randomCommand: RandomKattisCommand
+    loginCommand: LoginCommand,
+    parseCommand: ParseContestCommand,
+    randomCommand: RandomCommand,
+    updateCommand: UpdateCommand,
+    submitCommand: SubmitCommand
   ) {
     super(
-      parseCommand,
       loginCommand,
-      submitCommand,
+      parseCommand,
+      randomCommand,
       updateCommand,
-      randomCommand
+      submitCommand
     );
+    this.initializeSlashBuilder(Array.from(arguments) as ISlashCommand[]);
   }
 
-  public async process(message: Message, args: string[]) {
-    if (args.length <= 1) {
-      return this.printServiceInfo(message, "ORANGE");
-    }
-    const commandName = args[1];
-    if (!this.serviceContainer.hasOwnProperty(commandName)) {
-      return message.reply("Command not found. Please try again");
-    }
-    await this.serviceContainer[commandName].execute(message, args);
+  public process(interaction: CommandInteraction<CacheType>) {
+    const subcommand = interaction.options.getSubcommand();
+    return this.serviceContainer[subcommand].execute(interaction);
   }
 }

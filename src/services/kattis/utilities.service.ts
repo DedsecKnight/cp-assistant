@@ -8,9 +8,8 @@ import fs from "fs";
 import FormData from "@discordjs/form-data";
 import KattisProblem from "../../entity/kattis/problem.entity";
 import KattisDatabaseService from "./database.service";
-import { Message, TextBasedChannel } from "discord.js";
+import { Message, MessageEmbedOptions, TextBasedChannel } from "discord.js";
 import MessageService from "../utilities/message.service";
-import { Embed } from "../../entity/utilities/embed.entity";
 import FileService from "../utilities/file.service";
 
 @singleton()
@@ -290,7 +289,7 @@ export default class KattisUtilsService {
     submissionId: string,
     onJudgeFinished?: ((currentStatus: string) => Promise<void>) | undefined
   ) {
-    const embedConfig: Partial<Embed> = {
+    const embedConfig: MessageEmbedOptions = {
       color: "YELLOW",
       title: "Fetching Submission Data...",
     };

@@ -1,39 +1,36 @@
-import { Message } from "discord.js";
+import { CommandInteraction, CacheType, MessageEmbedOptions } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import { Embed } from "../../entity/utilities/embed.entity";
-import { ICommand } from "../../interfaces/command.interface";
+import {
+  ISlashCommand,
+  SlashCommandParam,
+} from "../../interfaces/slash.command.interface";
 import KattisUtilsService from "../../services/kattis/utilities.service";
-import MessageService from "../../services/utilities/message.service";
 
-@injectable()
 @singleton()
-export default class UpdateCommand implements ICommand<Message> {
+@injectable()
+export default class UpdateCommand implements ISlashCommand {
   public commandName: string = "update";
   public commandDescription: string =
     "Use this command to update the problem database.";
-  public commandParams: string[] = [];
+  public commandParams: SlashCommandParam[] = [];
 
-  constructor(
-    private kattisUtilsService: KattisUtilsService,
-    private messageService: MessageService
-  ) {}
+  constructor(private kattisUtilsService: KattisUtilsService) {}
 
-  public async execute(message: Message, args: string[]): Promise<any> {
-    const embedConfig: Partial<Embed> = {
+  public async execute(
+    interaction: CommandInteraction<CacheType>
+  ): Promise<any> {
+    const embedConfig: MessageEmbedOptions = {
       title: "Updating problem database...",
       color: "YELLOW",
     };
 
-    const replyMessage = await this.messageService.sendEmbedMessage(
-      message.channel,
-      embedConfig
-    );
+    await interaction.reply({ embeds: [embedConfig] });
 
     await this.kattisUtilsService.updateKattisProblemDatabase();
 
     embedConfig.title = "Problem database updated!";
     embedConfig.color = "GREEN";
 
-    return this.messageService.editEmbedMessage(replyMessage, embedConfig);
+    return interaction.editReply({ embeds: [embedConfig] });
   }
 }

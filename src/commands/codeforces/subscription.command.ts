@@ -1,44 +1,41 @@
-import { Message } from "discord.js";
+import { CommandInteraction, CacheType, MessageEmbedOptions } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import { Embed } from "../../entity/utilities/embed.entity";
-import { ICommand } from "../../interfaces/command.interface";
+import {
+  ISlashCommand,
+  SlashCommandParam,
+} from "../../interfaces/slash.command.interface";
 import CFSubscriptionService from "../../services/codeforces/subscription.service";
-import MessageService from "../../services/utilities/message.service";
 
-@singleton()
 @injectable()
-export default class SubscriptionCommand implements ICommand<Message> {
+@singleton()
+export default class SubscriptionCommand implements ISlashCommand {
   public commandName: string = "subscription";
   public commandDescription: string =
     "Use this command to view your subscription";
-  public commandParams: string[] = [];
+  public commandParams: SlashCommandParam[] = [];
 
-  constructor(
-    private subscriptionService: CFSubscriptionService,
-    private messageService: MessageService
-  ) {}
+  constructor(private subscriptionService: CFSubscriptionService) {}
 
   public async execute(
-    message: Message<boolean>,
-    args: string[]
+    interaction: CommandInteraction<CacheType>
   ): Promise<any> {
-    const discordId = message.author.id;
+    const discordId = interaction.user.id;
     const subscriptions =
       this.subscriptionService.getUserSubscription(discordId);
 
-    const embed: Partial<Embed> = {
-      title: `${message.author.username}'s Subscription`,
+    const embedConfig: MessageEmbedOptions = {
+      title: `${interaction.user.username}'s Subscription`,
     };
 
     if (subscriptions.length === 0) {
-      embed.description = "No subscription found";
+      embedConfig.description = "No subscription found";
     } else {
-      embed.fields = subscriptions.map((subscription) => ({
+      embedConfig.fields = subscriptions.map((subscription) => ({
         name: "Handle",
         value: subscription,
       }));
     }
 
-    return this.messageService.sendEmbedMessage(message.channel, embed);
+    return interaction.reply({ embeds: [embedConfig], ephemeral: true });
   }
 }

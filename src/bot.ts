@@ -1,14 +1,13 @@
 import { Client, Intents } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import BotModule from "./modules/bot.module";
-import play from "play-dl";
 import mongoose from "mongoose";
+import SlashCommandModule from "./modules/slash.module";
 
 @injectable()
 @singleton()
 export default class Bot {
   private client: Client;
-  constructor(private botModule: BotModule) {
+  constructor(private slashModule: SlashCommandModule) {
     this.client = new Client({
       intents: [
         Intents.FLAGS.GUILDS,
@@ -21,15 +20,6 @@ export default class Bot {
     });
   }
 
-  private async registerSoundCloudClientID() {
-    const clientID = await play.getFreeClientID();
-    play.setToken({
-      soundcloud: {
-        client_id: clientID,
-      },
-    });
-  }
-
   private async connectToDatabase() {
     return mongoose.connect(process.env.MONGODB_URI!, {
       minPoolSize: 10,
@@ -39,7 +29,7 @@ export default class Bot {
     });
   }
 
-  public async initialize(): Promise<string> {
+  public async initialize(): Promise<any> {
     try {
       await this.connectToDatabase();
       console.log("Connected to MongoDB");
@@ -52,15 +42,19 @@ export default class Bot {
       console.log("Bot is ready");
     });
 
-    this.client.on("messageCreate", async (message) => {
-      if (message.author.bot) return;
-      message.content = message.content.replaceAll("||", " ").trim();
-      if (!message.content.startsWith("!")) return;
-      await this.botModule.run(message);
+    this.client.on("interactionCreate", async (interaction) => {
+      if (!interaction.isCommand()) return;
+      await this.slashModule.processSlashCommand(interaction);
     });
 
-    await this.registerSoundCloudClientID();
+    await this.client.login(process.env.DISCORD_BOT);
 
-    return this.client.login(process.env.DISCORD_BOT);
+    try {
+      await this.slashModule.initializeSlashCommands(this.client.user!.id);
+      console.log("Slash commands initialized");
+    } catch (error) {
+      console.error(error);
+      process.exit(1);
+    }
   }
 }

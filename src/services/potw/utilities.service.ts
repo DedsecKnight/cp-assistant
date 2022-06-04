@@ -1,7 +1,6 @@
-import type { TextBasedChannel } from "discord.js";
+import type { MessageEmbedOptions, TextBasedChannel } from "discord.js";
 import { scheduleJob } from "node-schedule";
 import { injectable, singleton } from "tsyringe";
-import { Embed } from "../../entity/utilities/embed.entity";
 import { POTWSubscriberChannel } from "../../entity/potw/subscriber.entity";
 import KattisDatabaseService from "../kattis/database.service";
 import KattisUtilsService from "../kattis/utilities.service";
@@ -26,7 +25,7 @@ export default class POTWUtilsService {
         0,
         6
       );
-      const embed: Partial<Embed> = {
+      const embed: MessageEmbedOptions = {
         color: "ORANGE",
         title: "Problem of the Week from Kattis",
       };

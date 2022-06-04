@@ -1,51 +1,56 @@
-import { Message } from "discord.js";
+import { CommandInteraction, CacheType } from "discord.js";
 import { injectable, singleton } from "tsyringe";
-import { ICommand } from "../../interfaces/command.interface";
+import {
+  ISlashCommand,
+  SlashCommandParam,
+} from "../../interfaces/slash.command.interface";
 import TemplateDatabaseService from "../../services/template/database.service";
-import MessageService from "../../services/utilities/message.service";
 
 @singleton()
 @injectable()
-export default class DeleteTemplateCommand implements ICommand<Message> {
+export default class DeleteTemplateCommand implements ISlashCommand {
   public commandName: string = "delete";
   public commandDescription: string = "Delete template with specified filename";
-  public commandParams: string[] = ["filename"];
+  public commandParams: SlashCommandParam[] = [
+    {
+      paramName: "filename",
+      paramDescription: "Name of template file",
+      paramRequired: true,
+    },
+  ];
 
-  constructor(
-    private databaseService: TemplateDatabaseService,
-    private messageService: MessageService
-  ) {}
+  constructor(private databaseService: TemplateDatabaseService) {}
 
-  public async execute(message: Message, args: string[]) {
-    if (args.length < 2) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description: "A filename is required. Please try again",
-      });
-    }
-
-    const userId = message.member!.user.id;
-    const guildId = message.member!.guild.id;
-    const fileName = args[2];
-
+  public async execute(
+    interaction: CommandInteraction<CacheType>
+  ): Promise<any> {
+    const fileName = interaction.options.getString("filename")!;
     const template = await this.databaseService.getUserTemplate(
-      userId,
-      guildId,
+      interaction.user.id,
+      interaction.guild ? interaction.guild.id : "",
       fileName
     );
 
     if (!template) {
-      return this.messageService.sendEmbedMessage(message.channel, {
-        color: "RED",
-        description:
-          "Cannot find requested template. Please check your filename",
+      return interaction.reply({
+        embeds: [
+          {
+            color: "RED",
+            description:
+              "Cannot find requested template. Please check your filename",
+          },
+        ],
       });
     }
 
     await this.databaseService.deleteTemplate(template._id);
-    return this.messageService.sendEmbedMessage(message.channel, {
-      color: "GREEN",
-      description: `${fileName} deleted from ${message.author.username}#${message.author.discriminator}'s repository`,
+    return interaction.reply({
+      embeds: [
+        {
+          color: "GREEN",
+          description: `${fileName} deleted from ${interaction.user.toString()}'s repository`,
+        },
+      ],
     });
   }
 }
