@@ -99,7 +99,8 @@ export default class KattisUtilsService {
         problemId,
         filepath,
         cookieData.cookie,
-        fileExtension
+        fileExtension,
+        fileName
       );
 
     if (submitSolutionStatusCode >= 400) {
@@ -169,7 +170,8 @@ export default class KattisUtilsService {
     problemId: string,
     submissionFilePath: string,
     userCookie: string,
-    extension: string
+    extension: string,
+    fileName: string
   ): Promise<WithResponseStatusCode<{ submissionId: string }>> {
     const formData = new FormData();
 
@@ -178,6 +180,10 @@ export default class KattisUtilsService {
     formData.append("language", this.languageMapping[extension]);
     formData.append("problem", problemId);
     formData.append("script", "true");
+
+    if (extension === ".java") {
+      formData.append("mainclass", fileName.substring(0, fileName.length - 5));
+    }
 
     formData.append("sub_file[]", fs.createReadStream(submissionFilePath), {
       contentType: "application/octet-stream",
