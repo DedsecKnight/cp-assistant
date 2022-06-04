@@ -129,22 +129,26 @@ export default class KattisUtilsService {
       const { data: htmlData } = await axios.get(submissionUrl, {
         headers: {
           Cookie: cookieData,
+          referer: `${process.env.KATTIS_SUBMISSIONS_URL!}/${submissionId}`,
+          "user-agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36",
         },
       });
-      const parsedData = parse(htmlData.row_html);
-      const testCaseData = parsedData
-        .querySelector("div.testcases")!
-        .querySelectorAll("span");
+      const parsedData = parse(htmlData.row_html)
+        .querySelector("tr")!
+        .querySelector('td[data-type="testcases"]');
 
       return {
         statusCode: 200,
         statusId: htmlData.status_id,
-        verdicts: testCaseData.map((obj) => {
-          const temp = obj.getAttribute("class");
-          if (!temp) return "⬛";
-          if (temp === "rejected") return "❌";
-          return "✅";
-        }),
+        verdicts: parsedData
+          ? parsedData.querySelectorAll("i").map((obj) => {
+              const temp = obj.getAttribute("class")!;
+              if (temp.includes("is-empty")) return "⬛";
+              if (temp.includes("is-rejected")) return "❌";
+              return "✅";
+            })
+          : [],
       };
     } catch (error) {
       console.error(error);
