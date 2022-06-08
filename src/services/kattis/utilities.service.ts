@@ -357,36 +357,37 @@ export default class KattisUtilsService {
   }
 
   private async getProblemList(): Promise<KattisProblem[]> {
-    const { cookie, statusCode } = await this.generateKattisCookie(
-      process.env.KATTIS_SERVICE_USERNAME!,
-      process.env.KATTIS_SERVICE_PASSWORD!
-    );
+    return new Array(34)
+      .fill(0)
+      .map((_, idx) => idx)
+      .reduce(async (prevP: Promise<KattisProblem[]>, idx: number) => {
+        const prev = await prevP;
+        const { data: htmlData } = await axios.get(
+          `https://open.kattis.com/problems${idx > 0 ? `?page=${idx}` : ""}`
+        );
 
-    if (statusCode !== 200) {
-      return [];
-    }
-
-    const { data: htmlData } = await axios.get(process.env.KATTIS_SUBMIT_URL!, {
-      headers: {
-        Cookie: cookie,
-      },
-    });
-
-    const parsedJs = parse(htmlData)
-      .querySelectorAll("script")
-      .filter((obj) => obj.parentNode.rawAttrs === 'class="wrap"')[0].innerHTML;
-
-    const startIndex = parsedJs.indexOf('available: [{"problem_id"') + 11;
-    const endIndex = parsedJs.indexOf('placeholder: "Select a problem"') - 14;
-
-    const problems: any[] = JSON.parse(
-      parsedJs.substring(startIndex, endIndex)
-    );
-    return problems.map((problem: any) => ({
-      problemId: problem.problem_name,
-      name: problem.fulltitle,
-      difficulty: parseFloat(problem.problem_difficulty),
-    }));
+        const parsedJs = parse(htmlData)
+          .querySelector("tbody")!
+          .querySelectorAll("tr");
+        return [
+          ...prev,
+          ...parsedJs!.map((obj) => {
+            const allTds = obj.querySelectorAll("td");
+            const problemName = allTds[0].querySelector("a")!.innerText;
+            const problemId = allTds[0]
+              .querySelector("a")!
+              .getAttribute("href")!
+              .split("/")[2];
+            const difficulty =
+              allTds[allTds.length - 3].querySelector("span")!.innerText;
+            return {
+              difficulty: parseFloat(difficulty),
+              problemId,
+              name: problemName,
+            };
+          }),
+        ];
+      }, Promise.resolve([]) as Promise<KattisProblem[]>);
   }
 
   public async updateKattisProblemDatabase() {
