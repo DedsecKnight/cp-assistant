@@ -15,6 +15,14 @@ export default class KattisDatabaseService {
     this.kattisUserModel = KattisUserModel;
   }
 
+  public async findProblemById(
+    problemId: string
+  ): Promise<KattisProblem | null> {
+    return this.kattisProblemModel.findOne({
+      problemId,
+    });
+  }
+
   public async updateUserCredentials(
     userDiscordId: string,
     username: string,

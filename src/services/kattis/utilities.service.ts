@@ -26,6 +26,10 @@ export default class KattisUtilsService {
     ".py": "Python 3",
   };
 
+  public getProblemById(problemId: string): Promise<KattisProblem | null> {
+    return this.databaseService.findProblemById(problemId);
+  }
+
   private encryptPassword(password: string) {
     const secretKey = crypto.randomBytes(32);
     const iv = Buffer.from(process.env.KATTIS_IV!, "hex");

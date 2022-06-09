@@ -7,6 +7,7 @@ import {
 import { parse } from "node-html-parser";
 import axios from "axios";
 import { KattisContestProblem } from "../../entity/kattis/problem.entity";
+import KattisUtilsService from "../../services/kattis/utilities.service";
 
 @singleton()
 @injectable()
@@ -21,66 +22,65 @@ export default class ParseContestCommand implements ISlashCommand {
     },
   ];
 
-  private async getProblemUrls(contestId: string): Promise<
+  constructor(private kattisUtilsService: KattisUtilsService) {}
+
+  private async fetchDataFromContest(contestId: string): Promise<
     WithResponseStatusCode<{
       contestName: string;
-      problemLinks: Array<{ problemLink: string; letter: string }>;
+      problems: Omit<KattisContestProblem, "problemId">[];
     }>
   > {
     try {
       const { data: htmlData } = await axios.get(
-        `${process.env.KATTIS_CONTEST_URL!}/${contestId}/problems`
+        `https://open.kattis.com/contests/${contestId}/problems`
       );
-      const parsedPage = parse(htmlData);
-      const contestName = parsedPage.querySelector("h2.title")!.innerText;
-      const problems = parsedPage
-        .querySelector("#contest_problem_list")
-        ?.querySelector("tbody")
-        ?.querySelectorAll("tr")
-        .map((obj, idx: number) => {
-          const contestProblemUrl = obj
-            .querySelector("td")
-            ?.querySelector("a")
-            ?.getAttribute("href");
-          const startIndex = contestProblemUrl!.indexOf("/problems");
-          const problemLink = `${process.env
-            .KATTIS_BASE_URL!}${contestProblemUrl?.substring(startIndex)}`;
-          return { problemLink, letter: String.fromCharCode(65 + idx) };
-        });
+      const parsedHtml = parse(htmlData);
+      const contestName = parsedHtml
+        .querySelector("div.contest-title")!
+        .querySelector("h2")!
+        .innerText.trim();
+      const problemEntries = parsedHtml
+        .querySelector("tbody")!
+        .querySelectorAll("tr");
+
+      const problems = await Promise.all(
+        problemEntries.map(async (entry) => {
+          const letter = entry.querySelector("th")!.innerText.trim();
+          const name = entry
+            .querySelector("td")!
+            .querySelector("a")!
+            .innerText.trim();
+
+          const id = entry
+            .querySelector("td")!
+            .querySelector("a")!
+            .getAttribute("href")!
+            .split("/")
+            .slice(-1)[0];
+          const problemData = await this.kattisUtilsService.getProblemById(id);
+
+          return {
+            difficulty: problemData!.difficulty,
+            letter,
+            name,
+          };
+        })
+      );
+
+      problems.sort((l, r) => l.difficulty - r.difficulty);
 
       return {
         statusCode: 200,
         contestName,
-        problemLinks: problems || [],
+        problems,
       };
     } catch (error) {
       return {
         statusCode: 400,
         contestName: "",
-        problemLinks: [],
+        problems: [],
       };
     }
-  }
-
-  private async getProblemData(
-    problemUrl: string,
-    problemLetter: string
-  ): Promise<Partial<KattisContestProblem>> {
-    const { data: htmlData } = await axios.get(problemUrl);
-    const parsedPage = parse(htmlData);
-    const problemDifficulty = parsedPage
-      .querySelector("div.problem-sidebar.sidebar-info")!
-      .querySelectorAll("div.sidebar-info")[1]
-      .querySelectorAll("p")[3]
-      .innerText.split(" ")[2];
-    const problemName = parsedPage.querySelector(
-      "div.headline-wrapper"
-    )?.innerText;
-    return {
-      letter: problemLetter,
-      difficulty: parseFloat(problemDifficulty),
-      name: problemName!,
-    };
   }
 
   public async execute(
@@ -88,9 +88,8 @@ export default class ParseContestCommand implements ISlashCommand {
   ): Promise<any> {
     const contestId = interaction.options.getString("contest_id")!;
 
-    const { statusCode, contestName, problemLinks } = await this.getProblemUrls(
-      contestId
-    );
+    const { statusCode, contestName, problems } =
+      await this.fetchDataFromContest(contestId);
 
     if (statusCode !== 200) {
       const errorEmbed = new MessageEmbed({
@@ -112,21 +111,10 @@ export default class ParseContestCommand implements ISlashCommand {
       ],
     });
 
-    const problemList = [];
-
-    for (let { problemLink, letter } of problemLinks) {
-      const {
-        letter: problemLetter,
-        difficulty,
-        name,
-      } = await this.getProblemData(problemLink, letter);
-      problemList.push({
-        name: `Problem ${problemLetter}: ${name}`,
-        value: difficulty!.toString(),
-      });
-    }
-
-    problemList.sort((a, b) => parseFloat(a.value) - parseFloat(b.value));
+    const problemList = problems.map((problem) => ({
+      name: `Problem ${problem.letter}: ${problem.name}`,
+      value: problem.difficulty.toString(),
+    }));
 
     return interaction.editReply({
       embeds: [
