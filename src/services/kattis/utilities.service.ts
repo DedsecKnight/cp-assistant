@@ -26,6 +26,10 @@ export default class KattisUtilsService {
     ".py": "Python 3",
   };
 
+  public getProblemById(problemId: string): Promise<KattisProblem | null> {
+    return this.databaseService.findProblemById(problemId);
+  }
+
   private encryptPassword(password: string) {
     const secretKey = crypto.randomBytes(32);
     const iv = Buffer.from(process.env.KATTIS_IV!, "hex");
@@ -99,7 +103,8 @@ export default class KattisUtilsService {
         problemId,
         filepath,
         cookieData.cookie,
-        fileExtension
+        fileExtension,
+        fileName
       );
 
     if (submitSolutionStatusCode >= 400) {
@@ -129,22 +134,26 @@ export default class KattisUtilsService {
       const { data: htmlData } = await axios.get(submissionUrl, {
         headers: {
           Cookie: cookieData,
+          referer: `${process.env.KATTIS_SUBMISSIONS_URL!}/${submissionId}`,
+          "user-agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36",
         },
       });
-      const parsedData = parse(htmlData.row_html);
-      const testCaseData = parsedData
-        .querySelector("div.testcases")!
-        .querySelectorAll("span");
+      const parsedData = parse(htmlData.row_html)
+        .querySelector("tr")!
+        .querySelector('td[data-type="testcases"]');
 
       return {
         statusCode: 200,
         statusId: htmlData.status_id,
-        verdicts: testCaseData.map((obj) => {
-          const temp = obj.getAttribute("class");
-          if (!temp) return "⬛";
-          if (temp === "rejected") return "❌";
-          return "✅";
-        }),
+        verdicts: parsedData
+          ? parsedData.querySelectorAll("i").map((obj) => {
+              const temp = obj.getAttribute("class")!;
+              if (temp.includes("is-empty")) return "⬛";
+              if (temp.includes("is-rejected")) return "❌";
+              return "✅";
+            })
+          : [],
       };
     } catch (error) {
       console.error(error);
@@ -165,7 +174,8 @@ export default class KattisUtilsService {
     problemId: string,
     submissionFilePath: string,
     userCookie: string,
-    extension: string
+    extension: string,
+    fileName: string
   ): Promise<WithResponseStatusCode<{ submissionId: string }>> {
     const formData = new FormData();
 
@@ -174,6 +184,10 @@ export default class KattisUtilsService {
     formData.append("language", this.languageMapping[extension]);
     formData.append("problem", problemId);
     formData.append("script", "true");
+
+    if (extension === ".java") {
+      formData.append("mainclass", fileName.substring(0, fileName.length - 5));
+    }
 
     formData.append("sub_file[]", fs.createReadStream(submissionFilePath), {
       contentType: "application/octet-stream",
@@ -347,36 +361,37 @@ export default class KattisUtilsService {
   }
 
   private async getProblemList(): Promise<KattisProblem[]> {
-    const { cookie, statusCode } = await this.generateKattisCookie(
-      process.env.KATTIS_SERVICE_USERNAME!,
-      process.env.KATTIS_SERVICE_PASSWORD!
-    );
+    return new Array(34)
+      .fill(0)
+      .map((_, idx) => idx)
+      .reduce(async (prevP: Promise<KattisProblem[]>, idx: number) => {
+        const prev = await prevP;
+        const { data: htmlData } = await axios.get(
+          `https://open.kattis.com/problems${idx > 0 ? `?page=${idx}` : ""}`
+        );
 
-    if (statusCode !== 200) {
-      return [];
-    }
-
-    const { data: htmlData } = await axios.get(process.env.KATTIS_SUBMIT_URL!, {
-      headers: {
-        Cookie: cookie,
-      },
-    });
-
-    const parsedJs = parse(htmlData)
-      .querySelectorAll("script")
-      .filter((obj) => obj.parentNode.rawAttrs === 'class="wrap"')[0].innerHTML;
-
-    const startIndex = parsedJs.indexOf('available: [{"problem_id"') + 11;
-    const endIndex = parsedJs.indexOf('placeholder: "Select a problem"') - 14;
-
-    const problems: any[] = JSON.parse(
-      parsedJs.substring(startIndex, endIndex)
-    );
-    return problems.map((problem: any) => ({
-      problemId: problem.problem_name,
-      name: problem.fulltitle,
-      difficulty: parseFloat(problem.problem_difficulty),
-    }));
+        const parsedJs = parse(htmlData)
+          .querySelector("tbody")!
+          .querySelectorAll("tr");
+        return [
+          ...prev,
+          ...parsedJs!.map((obj) => {
+            const allTds = obj.querySelectorAll("td");
+            const problemName = allTds[0].querySelector("a")!.innerText;
+            const problemId = allTds[0]
+              .querySelector("a")!
+              .getAttribute("href")!
+              .split("/")[2];
+            const difficulty =
+              allTds[allTds.length - 3].querySelector("span")!.innerText;
+            return {
+              difficulty: parseFloat(difficulty),
+              problemId,
+              name: problemName,
+            };
+          }),
+        ];
+      }, Promise.resolve([]) as Promise<KattisProblem[]>);
   }
 
   public async updateKattisProblemDatabase() {
