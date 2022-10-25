@@ -383,7 +383,7 @@ export default class KattisUtilsService {
               .getAttribute("href")!
               .split("/")[2];
             const difficulty =
-              allTds[allTds.length - 3].querySelector("span")!.innerText;
+              allTds[allTds.length - 4].querySelector("span")!.innerText;
             return {
               difficulty: parseFloat(difficulty),
               problemId,
